@@ -1,0 +1,169 @@
+/* ─────────────────────────────────────────
+   Design tokens — Life OS
+   Single source of truth for all design values.
+   Raw ramps are prefixed by color name.
+   Semantic aliases reference ramp variables.
+───────────────────────────────────────── */
+
+:root {
+
+  /* ── Purple ramp (goals) ── */
+  --purple-50:  #EEEDFE;
+  --purple-100: #DDD9FC;
+  --purple-200: #BCB4FA;
+  --purple-300: #9B8EF7;
+  --purple-400: #7A69F5;
+  --purple-500: #6355D2;
+  --purple-600: #534AB7;
+  --purple-700: #433B93;
+  --purple-800: #342D70;
+  --purple-900: #231E4B;
+
+  /* ── Teal ramp (habits / completed states) ── */
+  --teal-50:  #E1F5EE;
+  --teal-100: #C3EBD9;
+  --teal-200: #87D7B3;
+  --teal-300: #4BC38E;
+  --teal-400: #27B07A;
+  --teal-500: #1D9E75;
+  --teal-600: #178562;
+  --teal-700: #116C4F;
+  --teal-800: #0C543C;
+  --teal-900: #07392A;
+
+  /* ── Amber ramp (finance) ── */
+  --amber-50:  #FAEEDA;
+  --amber-100: #F4DDB3;
+  --amber-200: #E9BB6A;
+  --amber-300: #DD9A22;
+  --amber-400: #CC851B;
+  --amber-500: #BA7517;
+  --amber-600: #9A5F12;
+  --amber-700: #7A4C0E;
+  --amber-800: #5C390A;
+  --amber-900: #3E2607;
+
+  /* ── Blue ramp (tasks) ── */
+  --blue-50:  #E6F1FB;
+  --blue-100: #CCDDF7;
+  --blue-200: #99BBF0;
+  --blue-300: #6699E8;
+  --blue-400: #3377E1;
+  --blue-500: #1A6CD8;
+  --blue-600: #155AB8;
+  --blue-700: #104898;
+  --blue-800: #0B3678;
+  --blue-900: #072558;
+
+  /* ── Gray ramp (neutral / structural) ── */
+  --gray-50:  #F5F5F5;
+  --gray-100: #E5E5E5;
+  --gray-200: #D4D4D4;
+  --gray-300: #BFBFBF;
+  --gray-400: #999999;
+  --gray-500: #737373;
+  --gray-600: #555555;
+  --gray-700: #404040;
+  --gray-800: #2A2A2A;
+  --gray-900: #1A1A1A;
+  --gray-950: #111111;
+
+  /* ─────────────────────────────────────────
+     Semantic color aliases — brand colors
+  ───────────────────────────────────────── */
+
+  /* Goals (purple) */
+  --color-goals:           var(--purple-600);
+  --color-goals-subtle:    var(--purple-50);
+  --color-goals-on-subtle: var(--purple-800);
+
+  /* Habits / completed (teal) */
+  --color-habits:           var(--teal-500);
+  --color-habits-subtle:    var(--teal-50);
+  --color-habits-on-subtle: var(--teal-800);
+
+  /* Finance (amber) */
+  --color-finance:           var(--amber-500);
+  --color-finance-subtle:    var(--amber-50);
+  --color-finance-on-subtle: var(--amber-800);
+
+  /* Tasks (blue) */
+  --color-tasks:           var(--blue-500);
+  --color-tasks-subtle:    var(--blue-50);
+  --color-tasks-on-subtle: var(--blue-800);
+
+  /* ─────────────────────────────────────────
+     Semantic surface / text / border tokens
+     (light mode defaults)
+  ───────────────────────────────────────── */
+
+  --color-background-primary:   #ffffff;
+  --color-background-secondary: var(--gray-50);
+
+  --color-text-primary:   var(--gray-950);
+  --color-text-secondary: var(--gray-600);
+  --color-text-tertiary:  var(--gray-400);
+
+  --color-border-secondary: var(--gray-200);
+  --color-border-tertiary:  var(--gray-100);
+
+  /* ─────────────────────────────────────────
+     Spacing scale
+     rem for layout, px for internals
+  ───────────────────────────────────────── */
+
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* ─────────────────────────────────────────
+     Border radius
+  ───────────────────────────────────────── */
+
+  --radius-sm:     4px;
+  --radius-md:     8px;
+  --radius-lg:     12px;
+  --radius-full:   99px;
+  --radius-circle: 50%;
+
+  /* Aliases used in the mockup */
+  --border-radius-md: var(--radius-md);
+  --border-radius-lg: var(--radius-lg);
+
+  /* ─────────────────────────────────────────
+     Typography
+  ───────────────────────────────────────── */
+
+  --font-weight-regular: 400;
+  --font-weight-medium:  500;
+
+}
+
+/* ─────────────────────────────────────────
+   Dark mode overrides — surface tokens only.
+   Raw ramps and semantic brand colors are
+   mode-agnostic; only surfaces invert.
+───────────────────────────────────────── */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background-primary:   var(--gray-950);
+    --color-background-secondary: var(--gray-900);
+
+    --color-text-primary:   #F0F0F0;
+    --color-text-secondary: var(--gray-400);
+    --color-text-tertiary:  var(--gray-600);
+
+    /* Elevated so card borders (border-line-subtle) are visible against
+       gray-950 backgrounds and input borders (border-line) stand out clearly. */
+    --color-border-secondary: var(--gray-700);
+    --color-border-tertiary:  var(--gray-800);
+  }
+}

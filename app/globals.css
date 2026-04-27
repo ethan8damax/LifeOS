@@ -2,26 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Box-sizing reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
+/* Margin / padding reset */
+* {
+  margin: 0;
+  padding: 0;
+}
+
+/* Base document */
+body {
+  font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-primary);
+  background-color: var(--color-background-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tell the browser to render native form controls (inputs, date pickers,
+   number spinners) in dark mode when the OS preference is dark. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+    color-scheme: dark;
   }
 }
