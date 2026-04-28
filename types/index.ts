@@ -33,13 +33,48 @@ export type Database = {
         }
         Relationships: []
       }
+      goal_habits: {
+        Row: {
+          id: string
+          goal_id: string | null
+          habit_id: string | null
+        }
+        Insert: {
+          id?: string
+          goal_id?: string | null
+          habit_id?: string | null
+        }
+        Update: {
+          id?: string
+          goal_id?: string | null
+          habit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'goal_habits_goal_id_fkey'
+            columns: ['goal_id']
+            isOneToOne: false
+            referencedRelation: 'goals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'goal_habits_habit_id_fkey'
+            columns: ['habit_id']
+            isOneToOne: false
+            referencedRelation: 'habits'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       goals: {
         Row: {
           id: string
           title: string
           description: string | null
+          vision: string | null
+          start_date: string | null
+          end_date: string | null
           target_date: string | null
-          progress: number | null
           status: string | null
           created_at: string | null
         }
@@ -47,8 +82,10 @@ export type Database = {
           id?: string
           title: string
           description?: string | null
+          vision?: string | null
+          start_date?: string | null
+          end_date?: string | null
           target_date?: string | null
-          progress?: number | null
           status?: string | null
           created_at?: string | null
         }
@@ -56,8 +93,10 @@ export type Database = {
           id?: string
           title?: string
           description?: string | null
+          vision?: string | null
+          start_date?: string | null
+          end_date?: string | null
           target_date?: string | null
-          progress?: number | null
           status?: string | null
           created_at?: string | null
         }
@@ -96,21 +135,21 @@ export type Database = {
         Row: {
           id: string
           title: string
-          frequency: string | null
+          days: string[] | null
           goal_id: string | null
           created_at: string | null
         }
         Insert: {
           id?: string
           title: string
-          frequency?: string | null
+          days?: string[] | null
           goal_id?: string | null
           created_at?: string | null
         }
         Update: {
           id?: string
           title?: string
-          frequency?: string | null
+          days?: string[] | null
           goal_id?: string | null
           created_at?: string | null
         }
@@ -165,6 +204,7 @@ export type Database = {
           priority: string | null
           due_date: string | null
           project_id: string | null
+          goal_id: string | null
           tag: string | null
           is_recurring: boolean | null
           recur_rule: string | null
@@ -178,6 +218,7 @@ export type Database = {
           priority?: string | null
           due_date?: string | null
           project_id?: string | null
+          goal_id?: string | null
           tag?: string | null
           is_recurring?: boolean | null
           recur_rule?: string | null
@@ -191,6 +232,7 @@ export type Database = {
           priority?: string | null
           due_date?: string | null
           project_id?: string | null
+          goal_id?: string | null
           tag?: string | null
           is_recurring?: boolean | null
           recur_rule?: string | null
@@ -202,6 +244,13 @@ export type Database = {
             columns: ['project_id']
             isOneToOne: false
             referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'tasks_goal_id_fkey'
+            columns: ['goal_id']
+            isOneToOne: false
+            referencedRelation: 'goals'
             referencedColumns: ['id']
           },
         ]
@@ -249,6 +298,7 @@ export type Database = {
 export type Task        = Database['public']['Tables']['tasks']['Row']
 export type Project     = Database['public']['Tables']['projects']['Row']
 export type Goal        = Database['public']['Tables']['goals']['Row']
+export type GoalHabit   = Database['public']['Tables']['goal_habits']['Row']
 export type Habit       = Database['public']['Tables']['habits']['Row']
 export type HabitLog    = Database['public']['Tables']['habit_logs']['Row']
 export type Transaction = Database['public']['Tables']['transactions']['Row']
@@ -258,6 +308,7 @@ export type Budget      = Database['public']['Tables']['budgets']['Row']
 export type TaskInsert        = Database['public']['Tables']['tasks']['Insert']
 export type ProjectInsert     = Database['public']['Tables']['projects']['Insert']
 export type GoalInsert        = Database['public']['Tables']['goals']['Insert']
+export type GoalHabitInsert   = Database['public']['Tables']['goal_habits']['Insert']
 export type HabitInsert       = Database['public']['Tables']['habits']['Insert']
 export type HabitLogInsert    = Database['public']['Tables']['habit_logs']['Insert']
 export type TransactionInsert = Database['public']['Tables']['transactions']['Insert']
@@ -267,7 +318,17 @@ export type BudgetInsert      = Database['public']['Tables']['budgets']['Insert'
 export type TaskUpdate        = Database['public']['Tables']['tasks']['Update']
 export type ProjectUpdate     = Database['public']['Tables']['projects']['Update']
 export type GoalUpdate        = Database['public']['Tables']['goals']['Update']
+export type GoalHabitUpdate   = Database['public']['Tables']['goal_habits']['Update']
 export type HabitUpdate       = Database['public']['Tables']['habits']['Update']
 export type HabitLogUpdate    = Database['public']['Tables']['habit_logs']['Update']
 export type TransactionUpdate = Database['public']['Tables']['transactions']['Update']
 export type BudgetUpdate      = Database['public']['Tables']['budgets']['Update']
+
+// ── Derived types ─────────────────────────────────────────────────────────────
+
+// GoalHabit row enriched with the full habit record (from a joined query)
+export type GoalHabitWithHabit = {
+  goal_id:  string
+  habit_id: string
+  habit:    Habit
+}

@@ -1,12 +1,15 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { getTasks, updateTask, deleteTask }   from '@/lib/queries/tasks'
-import { getGoals, updateGoal, deleteGoal }   from '@/lib/queries/goals'
-import { getHabits, getHabitLogsForWeek }     from '@/lib/queries/habits'
-import { getTransactions, getBudgets }        from '@/lib/queries/finance'
-import { todayStr, getWeekDates, pad }        from '@/lib/utils'
-import type { Task, Goal, Habit, Transaction, Budget } from '@/types'
+import { getTasks, updateTask, deleteTask }              from '@/lib/queries/tasks'
+import { getGoals, deleteGoal, getGoalHabitsWithHabits } from '@/lib/queries/goals'
+import { getHabits, getHabitLogsForWeek }                from '@/lib/queries/habits'
+import { getTransactions, getBudgets }                   from '@/lib/queries/finance'
+import {
+  todayStr, getWeekDates, pad,
+  weekOfTwelve, addDays, countHabitDaysInDates,
+} from '@/lib/utils'
+import type { Task, Goal, Habit, Transaction, Budget, GoalHabitWithHabit } from '@/types'
 import MetricCard   from '@/components/ui/MetricCard'
 import Card         from '@/components/ui/Card'
 import ProgressBar  from '@/components/ui/ProgressBar'
@@ -37,9 +40,37 @@ function getMonthStr(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`
 }
 
+const WEEK_DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
+const JS_DAY_TO_KEY: Record<number, string> = {
+  0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat',
+}
+
 function formatMonth(m: string): string {
   const [y, mo] = m.split('-').map(Number)
   return new Date(y, mo - 1, 1).toLocaleDateString('en-US', { month: 'long' })
+}
+
+// Compute a weekly execution score (0–100) for the focus goal.
+// = average of tactic completion rate and linked-habit completion rate for this week.
+function calcWeeklyExecution(
+  tactics:      Task[],
+  linkedHabits: Habit[],
+  logsByHabit:  Map<string, Set<string>>,
+  weekDates:    string[],
+): number | null {
+  const parts: number[] = []
+
+  if (tactics.length > 0)
+    parts.push(tactics.filter(t => t.status === 'done').length / tactics.length * 100)
+
+  let weekExp = 0, weekLog = 0
+  for (const h of linkedHabits) {
+    weekExp += countHabitDaysInDates(h.days, weekDates)
+    weekLog += weekDates.filter(d => logsByHabit.get(h.id)?.has(d)).length
+  }
+  if (weekExp > 0) parts.push(weekLog / weekExp * 100)
+
+  return parts.length > 0 ? Math.round(parts.reduce((a, b) => a + b) / parts.length) : null
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
@@ -49,6 +80,7 @@ export default function DashboardPage() {
   const [goals,        setGoals]        = useState<Goal[]>([])
   const [habits,       setHabits]       = useState<Habit[]>([])
   const [logsByHabit,  setLogsByHabit]  = useState<Map<string, Set<string>>>(new Map())
+  const [goalHabits,   setGoalHabits]   = useState<GoalHabitWithHabit[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [budgets,      setBudgets]      = useState<Budget[]>([])
   const [loading,      setLoading]      = useState(true)
@@ -57,6 +89,7 @@ export default function DashboardPage() {
   const today        = useMemo(() => todayStr(),    [])
   const weekDates    = useMemo(() => getWeekDates(), [])
   const currentMonth = useMemo(() => getMonthStr(), [])
+  const todayKey     = useMemo(() => JS_DAY_TO_KEY[new Date().getDay()], [])
 
   // ── Data loading ────────────────────────────────────────────────────────────
 
@@ -77,22 +110,27 @@ export default function DashboardPage() {
       setTransactions(txns)
       setBudgets(bgs)
 
-      if (allHabits.length > 0) {
-        const logs = await getHabitLogsForWeek(
-          allHabits.map(h => h.id),
-          weekDates[0],
-          weekDates[6],
-        )
-        const map = new Map<string, Set<string>>()
-        for (const log of logs) {
-          if (!log.habit_id) continue
-          if (!map.has(log.habit_id)) map.set(log.habit_id, new Set())
-          map.get(log.habit_id)!.add(log.logged_date)
-        }
-        setLogsByHabit(map)
+      // Load habit logs (this week) and goal→habit links in parallel
+      const goalIds = allGoals.map(g => g.id)
+      const [logs, ghRows] = await Promise.all([
+        allHabits.length > 0
+          ? getHabitLogsForWeek(allHabits.map(h => h.id), weekDates[0], weekDates[6])
+          : Promise.resolve([]),
+        goalIds.length > 0
+          ? getGoalHabitsWithHabits(goalIds)
+          : Promise.resolve([]),
+      ])
+
+      const map = new Map<string, Set<string>>()
+      for (const log of logs) {
+        if (!log.habit_id) continue
+        if (!map.has(log.habit_id)) map.set(log.habit_id, new Set())
+        map.get(log.habit_id)!.add(log.logged_date)
       }
+      setLogsByHabit(map)
+      setGoalHabits(ghRows)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load dashboard.')
+      setError((e as { message?: string })?.message ?? 'Failed to load dashboard.')
     } finally {
       setLoading(false)
     }
@@ -121,15 +159,6 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleGoalUpdate(id: string, progress: number) {
-    setGoals(prev => prev.map(g => g.id === id ? { ...g, progress } : g))
-    try {
-      await updateGoal(id, { progress })
-    } catch {
-      load()
-    }
-  }
-
   async function handleGoalDelete(id: string) {
     setGoals(prev => prev.filter(g => g.id !== id))
     try {
@@ -141,7 +170,6 @@ export default function DashboardPage() {
 
   // ── Derived state ───────────────────────────────────────────────────────────
 
-  // Non-done tasks due today or overdue — the actionable list
   const todayTasks = useMemo(() =>
     tasks
       .filter(t => t.status !== 'done' && t.due_date !== null && t.due_date <= today)
@@ -154,9 +182,14 @@ export default function DashboardPage() {
     [tasks, today],
   )
 
+  const habitsToday = useMemo(() =>
+    habits.filter(h => !h.days || h.days.includes(todayKey)),
+    [habits, todayKey],
+  )
+
   const loggedTodayCount = useMemo(() =>
-    habits.filter(h => logsByHabit.get(h.id)?.has(today)).length,
-    [habits, logsByHabit, today],
+    habitsToday.filter(h => logsByHabit.get(h.id)?.has(today)).length,
+    [habitsToday, logsByHabit, today],
   )
 
   const totalExpenses = useMemo(() =>
@@ -184,18 +217,46 @@ export default function DashboardPage() {
 
   const focusGoal = goals[0] ?? null
 
-  function buildDots(habitId: string): DotState[] {
+  // Focus goal execution score (this week)
+  const focusGoalTactics = useMemo(() =>
+    focusGoal ? tasks.filter(t => t.goal_id === focusGoal.id) : [],
+    [tasks, focusGoal],
+  )
+  const focusGoalHabits = useMemo(() =>
+    focusGoal
+      ? goalHabits.filter(gh => gh.goal_id === focusGoal.id).map(gh => gh.habit)
+      : [],
+    [goalHabits, focusGoal],
+  )
+  const focusExecution = useMemo(() =>
+    focusGoal
+      ? calcWeeklyExecution(focusGoalTactics, focusGoalHabits, logsByHabit, weekDates)
+      : null,
+    [focusGoal, focusGoalTactics, focusGoalHabits, logsByHabit, weekDates],
+  )
+
+  function buildDots(habitId: string, habitDays: string[] | null): DotState[] {
     const logged = logsByHabit.get(habitId) ?? new Set<string>()
-    return weekDates.map(date => {
+    return weekDates.map((date, i) => {
+      const dayKey = WEEK_DAY_KEYS[i]
+      if (habitDays && !habitDays.includes(dayKey)) return { date, kind: 'skip' }
       let kind: DotKind
-      if (date > today)       kind = 'future'
+      if (date > today)        kind = 'future'
       else if (date === today) kind = logged.has(date) ? 'today-done' : 'today-pending'
-      else                    kind = logged.has(date) ? 'done' : 'miss'
+      else                     kind = logged.has(date) ? 'done' : 'miss'
       return { date, kind }
     })
   }
 
   // ── Render ──────────────────────────────────────────────────────────────────
+
+  const focusStartDate = focusGoal
+    ? (focusGoal.start_date ?? focusGoal.created_at?.slice(0, 10) ?? today)
+    : today
+  const focusEndDate = focusGoal
+    ? (focusGoal.end_date ?? addDays(focusStartDate, 83))
+    : today
+  const focusWeekNum = focusGoal ? weekOfTwelve(focusStartDate, today) : 1
 
   return (
     <div className="p-6 max-w-3xl">
@@ -212,21 +273,31 @@ export default function DashboardPage() {
         <p className="text-[13px] text-finance mb-4">{error}</p>
       )}
 
-      {/* Weekly focus banner */}
+      {/* Focus goal banner */}
       {!loading && focusGoal && (
         <div className="bg-goals-subtle rounded-xl px-5 py-4 mb-6">
-          <p className="text-[11px] text-goals-on-subtle mb-[6px] opacity-70">
-            Focus
-          </p>
-          <div className="flex items-center gap-2 mb-[8px]">
-            <span className="text-[14px] font-medium text-goals-on-subtle flex-1">
-              {focusGoal.title}
-            </span>
-            <span className="text-[12px] text-goals-on-subtle opacity-70 flex-shrink-0">
-              {focusGoal.progress ?? 0}%
-            </span>
+          <div className="flex items-center gap-2 mb-[2px]">
+            <p className="text-[11px] text-goals-on-subtle opacity-70 flex-1">
+              Focus · Week {focusWeekNum} of 12
+            </p>
+            {focusExecution !== null && (
+              <span className="text-[13px] font-medium text-goals-on-subtle">
+                {focusExecution}% this week
+              </span>
+            )}
           </div>
-          <ProgressBar value={focusGoal.progress ?? 0} intent="goals" />
+          <p className="text-[14px] font-medium text-goals-on-subtle mb-3">
+            {focusGoal.title}
+          </p>
+          {/* 12-week timeline */}
+          <div className="flex items-center gap-[3px]">
+            {Array.from({ length: 12 }, (_, i) => (
+              <div
+                key={i}
+                className={`flex-1 h-[4px] rounded-full ${i < focusWeekNum ? 'bg-goals' : 'bg-goals-on-subtle opacity-20'}`}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -240,7 +311,7 @@ export default function DashboardPage() {
         <MetricCard
           label="Habits today"
           value={loading ? '—' : loggedTodayCount}
-          valueSub={!loading && habits.length > 0 ? `/ ${habits.length}` : undefined}
+          valueSub={!loading && habitsToday.length > 0 ? `/ ${habitsToday.length}` : undefined}
         />
         <MetricCard
           label="Budget"
@@ -278,7 +349,6 @@ export default function DashboardPage() {
                   <GoalProgress
                     key={g.id}
                     goal={g}
-                    onUpdate={handleGoalUpdate}
                     onDelete={handleGoalDelete}
                   />
                 ))}
@@ -291,20 +361,20 @@ export default function DashboardPage() {
         {/* Right column: habits + budget */}
         <div className="flex flex-col gap-4">
 
-          <Card title="Habits this week">
+          <Card title="Habits today">
             {loading ? (
               <p className="text-[13px] text-foreground-tertiary py-1">Loading…</p>
-            ) : habits.length === 0 ? (
-              <p className="text-[13px] text-foreground-tertiary py-1">No habits yet.</p>
+            ) : habitsToday.length === 0 ? (
+              <p className="text-[13px] text-foreground-tertiary py-1">No habits scheduled today.</p>
             ) : (
               <div>
-                {habits.map(h => (
+                {habitsToday.map(h => (
                   <div
                     key={h.id}
                     className="flex flex-col gap-[5px] py-[8px] border-b-[0.5px] border-line-subtle last:border-b-0"
                   >
                     <span className="text-[12px] text-foreground">{h.title}</span>
-                    <HabitDots dots={buildDots(h.id)} />
+                    <HabitDots dots={buildDots(h.id, h.days)} />
                   </div>
                 ))}
               </div>

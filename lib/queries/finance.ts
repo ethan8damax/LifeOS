@@ -12,9 +12,13 @@ export async function getTransactions(filters?: {
 
   if (filters?.type)  query = query.eq('type', filters.type)
   if (filters?.month) {
+    const [y, mo] = filters.month.split('-').map(Number)
+    const nextMonth = mo === 12
+      ? `${y + 1}-01`
+      : `${y}-${String(mo + 1).padStart(2, '0')}`
     query = query
       .gte('date', `${filters.month}-01`)
-      .lte('date', `${filters.month}-31`)
+      .lt('date',  `${nextMonth}-01`)
   }
 
   const { data, error } = await query

@@ -33,7 +33,7 @@ export default function TasksPage() {
       const data = await getTasks()
       setTasks(data)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load tasks.')
+      setError((e as { message?: string })?.message ?? 'Failed to load tasks.')
     } finally {
       setLoading(false)
     }
@@ -63,6 +63,15 @@ export default function TasksPage() {
     setTasks(prev => prev.filter(t => t.id !== id))
     try {
       await deleteTask(id)
+    } catch {
+      load()
+    }
+  }
+
+  async function handleStatusChange(id: string, status: 'todo' | 'in_progress' | 'done') {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t))
+    try {
+      await updateTask(id, { status })
     } catch {
       load()
     }
@@ -181,6 +190,7 @@ export default function TasksPage() {
             tasks={visible}
             onToggle={handleToggle}
             onDelete={handleDelete}
+            onStatusChange={handleStatusChange}
           />
         )}
       </Card>

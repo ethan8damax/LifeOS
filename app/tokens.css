@@ -152,18 +152,16 @@
    mode-agnostic; only surfaces invert.
 ───────────────────────────────────────── */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background-primary:   var(--gray-950);
-    --color-background-secondary: var(--gray-900);
+html.dark {
+  --color-background-primary:   var(--gray-950);
+  --color-background-secondary: var(--gray-900);
 
-    --color-text-primary:   #F0F0F0;
-    --color-text-secondary: var(--gray-400);
-    --color-text-tertiary:  var(--gray-600);
+  --color-text-primary:   #F0F0F0;
+  --color-text-secondary: var(--gray-400);
+  --color-text-tertiary:  var(--gray-600);
 
-    /* Elevated so card borders (border-line-subtle) are visible against
-       gray-950 backgrounds and input borders (border-line) stand out clearly. */
-    --color-border-secondary: var(--gray-700);
-    --color-border-tertiary:  var(--gray-800);
-  }
+  /* Elevated so card borders (border-line-subtle) are visible against
+     gray-950 backgrounds and input borders (border-line) stand out clearly. */
+  --color-border-secondary: var(--gray-700);
+  --color-border-tertiary:  var(--gray-800);
 }

@@ -60,6 +60,19 @@ export async function deleteTask(id: string): Promise<void> {
   if (error) throw error
 }
 
+// Returns all tasks (tactics) linked directly to any of the given goal IDs.
+export async function getTasksByGoalIds(goalIds: string[]): Promise<Task[]> {
+  if (goalIds.length === 0) return []
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .in('goal_id', goalIds)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data
+}
+
 // ── Projects ──────────────────────────────────────────────────────────────────
 
 export async function getProjects(filters?: {

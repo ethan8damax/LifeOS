@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 
-export type DotKind = 'done' | 'miss' | 'today-done' | 'today-pending' | 'future'
+export type DotKind = 'done' | 'miss' | 'today-done' | 'today-pending' | 'future' | 'skip'
 
 export interface DotState {
   date:  string
@@ -26,6 +26,7 @@ export default function HabitDots({ dots }: HabitDotsProps) {
               dot.kind === 'miss'         && 'bg-background-secondary border-[0.5px] border-line-subtle',
               dot.kind === 'today-pending'&& 'bg-background-secondary border-[1.5px] border-habits',
               dot.kind === 'future'       && 'bg-background-secondary border-[0.5px] border-line-subtle opacity-40',
+              dot.kind === 'skip'         && 'opacity-0 pointer-events-none',
             )}
           />
           <span className="text-[9px] text-foreground-tertiary leading-none">

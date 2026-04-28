@@ -25,10 +25,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Tell the browser to render native form controls (inputs, date pickers,
-   number spinners) in dark mode when the OS preference is dark. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-  }
+/* Tell the browser to render native form controls in the correct color scheme. */
+html.dark {
+  color-scheme: dark;
 }

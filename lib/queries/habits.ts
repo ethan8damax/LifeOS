@@ -49,6 +49,9 @@ export async function updateHabit(id: string, payload: HabitUpdate): Promise<Hab
 
 export async function deleteHabit(id: string): Promise<void> {
   const supabase = createClient()
+  // Delete logs first — no ON DELETE CASCADE on the FK
+  const { error: logsError } = await supabase.from('habit_logs').delete().eq('habit_id', id)
+  if (logsError) throw logsError
   const { error } = await supabase.from('habits').delete().eq('id', id)
   if (error) throw error
 }

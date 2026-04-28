@@ -11,19 +11,20 @@ function fmt(n: number): string {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface BudgetRowProps {
-  budget: Budget
-  spent:  number
+  budget:    Budget
+  spent:     number
+  onDelete?: (id: string) => void
 }
 
-export default function BudgetRow({ budget, spent }: BudgetRowProps) {
-  const pct      = budget.limit_amount > 0 ? (spent / budget.limit_amount) * 100 : 0
+export default function BudgetRow({ budget, spent, onDelete }: BudgetRowProps) {
+  const pct        = budget.limit_amount > 0 ? (spent / budget.limit_amount) * 100 : 0
   const overBudget = spent > budget.limit_amount
 
   return (
-    <div className="flex flex-col gap-[6px] py-[10px] border-b-[0.5px] border-line-subtle last:border-b-0">
+    <div className="group flex flex-col gap-[6px] py-[10px] border-b-[0.5px] border-line-subtle last:border-b-0">
 
-      {/* Category + amounts */}
-      <div className="flex items-center">
+      {/* Category + amounts + delete */}
+      <div className="flex items-center gap-1">
         <span className="text-[13px] text-foreground flex-1">
           {budget.category}
         </span>
@@ -36,6 +37,14 @@ export default function BudgetRow({ budget, spent }: BudgetRowProps) {
         <span className="text-[12px] text-foreground-tertiary tabular-nums">
           &nbsp;/ {fmt(budget.limit_amount)}
         </span>
+        {onDelete && (
+          <button
+            type="button"
+            onClick={() => onDelete(budget.id)}
+            aria-label="Delete budget"
+            className="opacity-0 group-hover:opacity-100 ml-1 text-[16px] leading-none text-foreground-tertiary hover:text-foreground-secondary transition-opacity"
+          >×</button>
+        )}
       </div>
 
       {/* Progress bar */}
