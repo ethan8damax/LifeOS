@@ -26,9 +26,10 @@ export async function getHabitById(id: string): Promise<Habit> {
 
 export async function createHabit(payload: HabitInsert): Promise<Habit> {
   const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
   const { data, error } = await supabase
     .from('habits')
-    .insert(payload)
+    .insert({ ...payload, ...(session?.user ? { user_id: session.user.id } : {}) })
     .select()
     .single()
   if (error) throw error
@@ -107,10 +108,16 @@ export async function getHabitLogsForWeek(
  */
 export async function logHabit(habitId: string, date: string): Promise<HabitLog> {
   const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
   const { data, error } = await supabase
     .from('habit_logs')
     .upsert(
-      { habit_id: habitId, logged_date: date, completed: true },
+      {
+        habit_id: habitId,
+        logged_date: date,
+        completed: true,
+        ...(session?.user ? { user_id: session.user.id } : {}),
+      },
       { onConflict: 'habit_id,logged_date' },
     )
     .select()
@@ -134,9 +141,10 @@ export async function unlogHabit(habitId: string, date: string): Promise<void> {
 
 export async function createHabitLog(payload: HabitLogInsert): Promise<HabitLog> {
   const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
   const { data, error } = await supabase
     .from('habit_logs')
-    .insert(payload)
+    .insert({ ...payload, ...(session?.user ? { user_id: session.user.id } : {}) })
     .select()
     .single()
   if (error) throw error

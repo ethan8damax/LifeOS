@@ -33,9 +33,10 @@ export async function getGoalById(id: string): Promise<Goal> {
 
 export async function createGoal(payload: GoalInsert): Promise<Goal> {
   const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
   const { data, error } = await supabase
     .from('goals')
-    .insert(payload)
+    .insert({ ...payload, ...(session?.user ? { user_id: session.user.id } : {}) })
     .select()
     .single()
   if (error) throw error
@@ -88,9 +89,17 @@ export async function linkHabitToGoal(
   habitId: string,
 ): Promise<GoalHabit> {
   const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
   const { data, error } = await supabase
     .from('goal_habits')
-    .upsert({ goal_id: goalId, habit_id: habitId }, { onConflict: 'goal_id,habit_id' })
+    .upsert(
+      {
+        goal_id: goalId,
+        habit_id: habitId,
+        ...(session?.user ? { user_id: session.user.id } : {}),
+      },
+      { onConflict: 'goal_id,habit_id' },
+    )
     .select()
     .single()
   if (error) throw error

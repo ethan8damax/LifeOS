@@ -14,73 +14,82 @@ export type Database = {
     Tables: {
       assets: {
         Row: {
-          id:          string
-          name:        string
-          account_ref: string | null
-          balance:     number
-          type:        string
+          id:           string
+          name:         string
+          account_ref:  string | null
+          balance:      number
+          type:         string
+          household_id?: string | null
         }
         Insert: {
-          id?:          string
-          name:         string
-          account_ref?: string | null
-          balance?:     number
-          type?:        string
+          id?:           string
+          name:          string
+          account_ref?:  string | null
+          balance?:      number
+          type?:         string
+          household_id?: string | null
         }
         Update: {
-          id?:          string
-          name?:        string
-          account_ref?: string | null
-          balance?:     number
-          type?:        string
+          id?:           string
+          name?:         string
+          account_ref?:  string | null
+          balance?:      number
+          type?:         string
+          household_id?: string | null
         }
         Relationships: []
       }
       budget_categories: {
         Row: {
-          id:       string
-          name:     string
-          expected: number
-          actual:   number
-          month:    string
+          id:           string
+          name:         string
+          expected:     number
+          actual:       number
+          month:        string
+          household_id?: string | null
         }
         Insert: {
-          id?:       string
-          name:      string
-          expected?: number
-          actual?:   number
-          month:     string
+          id?:           string
+          name:          string
+          expected?:     number
+          actual?:       number
+          month:         string
+          household_id?: string | null
         }
         Update: {
-          id?:       string
-          name?:     string
-          expected?: number
-          actual?:   number
-          month?:    string
+          id?:           string
+          name?:         string
+          expected?:     number
+          actual?:       number
+          month?:        string
+          household_id?: string | null
         }
         Relationships: []
       }
       debts: {
         Row: {
-          id:          string
-          owner:       string
-          name:        string
-          amount_owed: number
-          due_date:    string | null
-        }
-        Insert: {
-          id?:          string
+          id:           string
           owner:        string
           name:         string
-          amount_owed?: number
-          due_date?:    string | null
+          amount_owed:  number
+          due_date:     string | null
+          household_id?: string | null
+        }
+        Insert: {
+          id?:           string
+          owner:         string
+          name:          string
+          amount_owed?:  number
+          due_date?:     string | null
+          household_id?: string | null
         }
         Update: {
-          id?:          string
-          owner?:       string
-          name?:        string
-          amount_owed?: number
-          due_date?:    string | null
+          id?:           string
+          owner?:        string
+          name?:         string
+          amount_owed?:  number
+          due_date?:     string | null
+          household_id?: string | null
         }
         Relationships: []
       }
@@ -89,16 +98,19 @@ export type Database = {
           id:       string
           goal_id:  string | null
           habit_id: string | null
+          user_id?: string | null
         }
         Insert: {
           id?:       string
           goal_id?:  string | null
           habit_id?: string | null
+          user_id?:  string | null
         }
         Update: {
           id?:       string
           goal_id?:  string | null
           habit_id?: string | null
+          user_id?:  string | null
         }
         Relationships: [
           {
@@ -128,6 +140,7 @@ export type Database = {
           target_date: string | null
           status:      string | null
           created_at:  string | null
+          user_id?:    string | null
         }
         Insert: {
           id?:          string
@@ -139,6 +152,7 @@ export type Database = {
           target_date?: string | null
           status?:      string | null
           created_at?:  string | null
+          user_id?:     string | null
         }
         Update: {
           id?:          string
@@ -150,6 +164,7 @@ export type Database = {
           target_date?: string | null
           status?:      string | null
           created_at?:  string | null
+          user_id?:     string | null
         }
         Relationships: []
       }
@@ -159,18 +174,21 @@ export type Database = {
           habit_id:    string | null
           logged_date: string
           completed:   boolean | null
+          user_id?:    string | null
         }
         Insert: {
           id?:          string
           habit_id?:    string | null
           logged_date:  string
           completed?:   boolean | null
+          user_id?:     string | null
         }
         Update: {
           id?:          string
           habit_id?:    string | null
           logged_date?: string
           completed?:   boolean | null
+          user_id?:     string | null
         }
         Relationships: [
           {
@@ -189,6 +207,7 @@ export type Database = {
           days:       string[] | null
           goal_id:    string | null
           created_at: string | null
+          user_id?:   string | null
         }
         Insert: {
           id?:         string
@@ -196,6 +215,7 @@ export type Database = {
           days?:       string[] | null
           goal_id?:    string | null
           created_at?: string | null
+          user_id?:    string | null
         }
         Update: {
           id?:         string
@@ -203,6 +223,7 @@ export type Database = {
           days?:       string[] | null
           goal_id?:    string | null
           created_at?: string | null
+          user_id?:    string | null
         }
         Relationships: [
           {
@@ -214,30 +235,83 @@ export type Database = {
           },
         ]
       }
-      income_sources: {
+      household_members: {
         Row: {
-          id:       string
-          owner:    string
-          name:     string
-          expected: number
-          actual:   number
-          month:    string
+          id:           string
+          household_id: string
+          user_id:      string
+          display_name: string | null
         }
         Insert: {
-          id?:       string
-          owner:     string
-          name:      string
-          expected?: number
-          actual?:   number
-          month:     string
+          id?:          string
+          household_id: string
+          user_id:      string
+          display_name?: string | null
         }
         Update: {
-          id?:       string
-          owner?:    string
-          name?:     string
-          expected?: number
-          actual?:   number
-          month?:    string
+          id?:           string
+          household_id?: string
+          user_id?:      string
+          display_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'household_members_household_id_fkey'
+            columns: ['household_id']
+            isOneToOne: false
+            referencedRelation: 'households'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      households: {
+        Row: {
+          id:          string
+          name:        string
+          invite_code: string | null
+          created_at:  string | null
+        }
+        Insert: {
+          id?:          string
+          name:         string
+          invite_code?: string | null
+          created_at?:  string | null
+        }
+        Update: {
+          id?:          string
+          name?:        string
+          invite_code?: string | null
+          created_at?:  string | null
+        }
+        Relationships: []
+      }
+      income_sources: {
+        Row: {
+          id:           string
+          owner:        string
+          name:         string
+          expected:     number
+          actual:       number
+          month:        string
+          household_id?: string | null
+        }
+        Insert: {
+          id?:           string
+          owner:         string
+          name:          string
+          expected?:     number
+          actual?:       number
+          month:         string
+          household_id?: string | null
+        }
+        Update: {
+          id?:           string
+          owner?:        string
+          name?:         string
+          expected?:     number
+          actual?:       number
+          month?:        string
+          household_id?: string | null
         }
         Relationships: []
       }
@@ -249,6 +323,7 @@ export type Database = {
           total_debt:    number | null
           net_worth:     number | null
           snapshot_date: string | null
+          household_id?: string | null
         }
         Insert: {
           id?:            string
@@ -257,6 +332,7 @@ export type Database = {
           total_debt?:    number | null
           net_worth?:     number | null
           snapshot_date?: string | null
+          household_id?:  string | null
         }
         Update: {
           id?:            string
@@ -265,6 +341,7 @@ export type Database = {
           total_debt?:    number | null
           net_worth?:     number | null
           snapshot_date?: string | null
+          household_id?:  string | null
         }
         Relationships: []
       }
@@ -275,6 +352,7 @@ export type Database = {
           status:     string | null
           goal_id:    string | null
           created_at: string | null
+          user_id?:   string | null
         }
         Insert: {
           id?:         string
@@ -282,6 +360,7 @@ export type Database = {
           status?:     string | null
           goal_id?:    string | null
           created_at?: string | null
+          user_id?:    string | null
         }
         Update: {
           id?:         string
@@ -289,6 +368,7 @@ export type Database = {
           status?:     string | null
           goal_id?:    string | null
           created_at?: string | null
+          user_id?:    string | null
         }
         Relationships: [
           {
@@ -302,40 +382,46 @@ export type Database = {
       }
       recurring_payments: {
         Row: {
-          id:     string
-          name:   string
-          amount: number
+          id:           string
+          name:         string
+          amount:       number
+          household_id?: string | null
         }
         Insert: {
-          id?:    string
-          name:   string
-          amount: number
+          id?:           string
+          name:          string
+          amount:        number
+          household_id?: string | null
         }
         Update: {
-          id?:     string
-          name?:   string
-          amount?: number
+          id?:           string
+          name?:         string
+          amount?:       number
+          household_id?: string | null
         }
         Relationships: []
       }
       savings_pods: {
         Row: {
-          id:       string
-          name:     string
-          allotted: number
-          goal:     number
+          id:           string
+          name:         string
+          allotted:     number
+          goal:         number
+          household_id?: string | null
         }
         Insert: {
-          id?:       string
-          name:      string
-          allotted?: number
-          goal?:     number
+          id?:           string
+          name:          string
+          allotted?:     number
+          goal?:         number
+          household_id?: string | null
         }
         Update: {
-          id?:       string
-          name?:     string
-          allotted?: number
-          goal?:     number
+          id?:           string
+          name?:         string
+          allotted?:     number
+          goal?:         number
+          household_id?: string | null
         }
         Relationships: []
       }
@@ -353,6 +439,7 @@ export type Database = {
           is_recurring: boolean | null
           recur_rule:   string | null
           created_at:   string | null
+          user_id?:     string | null
         }
         Insert: {
           id?:           string
@@ -367,6 +454,7 @@ export type Database = {
           is_recurring?: boolean | null
           recur_rule?:   string | null
           created_at?:   string | null
+          user_id?:      string | null
         }
         Update: {
           id?:           string
@@ -381,6 +469,7 @@ export type Database = {
           is_recurring?: boolean | null
           recur_rule?:   string | null
           created_at?:   string | null
+          user_id?:      string | null
         }
         Relationships: [
           {
@@ -422,6 +511,8 @@ export type Debt             = Database['public']['Tables']['debts']['Row']
 export type SavingsPod       = Database['public']['Tables']['savings_pods']['Row']
 export type Asset            = Database['public']['Tables']['assets']['Row']
 export type NetWorthSnapshot = Database['public']['Tables']['net_worth_snapshots']['Row']
+export type Household        = Database['public']['Tables']['households']['Row']
+export type HouseholdMember  = Database['public']['Tables']['household_members']['Row']
 
 // ── Insert types ──────────────────────────────────────────────────────────────
 
@@ -438,6 +529,8 @@ export type DebtInsert             = Database['public']['Tables']['debts']['Inse
 export type SavingsPodInsert       = Database['public']['Tables']['savings_pods']['Insert']
 export type AssetInsert            = Database['public']['Tables']['assets']['Insert']
 export type NetWorthSnapshotInsert = Database['public']['Tables']['net_worth_snapshots']['Insert']
+export type HouseholdInsert        = Database['public']['Tables']['households']['Insert']
+export type HouseholdMemberInsert  = Database['public']['Tables']['household_members']['Insert']
 
 // ── Update types ──────────────────────────────────────────────────────────────
 

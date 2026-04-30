@@ -33,9 +33,10 @@ export async function getTaskById(id: string): Promise<Task> {
 
 export async function createTask(payload: TaskInsert): Promise<Task> {
   const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
   const { data, error } = await supabase
     .from('tasks')
-    .insert(payload)
+    .insert({ ...payload, ...(session?.user ? { user_id: session.user.id } : {}) })
     .select()
     .single()
   if (error) throw error
@@ -103,9 +104,10 @@ export async function getProjectById(id: string): Promise<Project> {
 
 export async function createProject(payload: ProjectInsert): Promise<Project> {
   const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
   const { data, error } = await supabase
     .from('projects')
-    .insert(payload)
+    .insert({ ...payload, ...(session?.user ? { user_id: session.user.id } : {}) })
     .select()
     .single()
   if (error) throw error

@@ -5,6 +5,7 @@ import './globals.css'
 import Sidebar        from '@/components/layout/Sidebar'
 import MobileNav      from '@/components/layout/MobileNav'
 import ThemeProvider  from '@/components/layout/ThemeProvider'
+import { AuthProvider } from '@/lib/context/auth'
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -26,13 +27,15 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} antialiased`}>
         <ThemeProvider>
-          <div className="flex h-screen">
-            <Sidebar />
-            <main className="flex-1 h-screen overflow-y-auto pb-[68px] md:pb-0">
-              {children}
-            </main>
-          </div>
-          <MobileNav />
+          <AuthProvider>
+            <div className="flex h-screen">
+              <Sidebar />
+              <main className="flex-1 h-screen overflow-y-auto pb-[68px] md:pb-0">
+                {children}
+              </main>
+            </div>
+            <MobileNav />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

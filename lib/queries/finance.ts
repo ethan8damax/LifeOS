@@ -9,6 +9,22 @@ import type {
   NetWorthSnapshot, NetWorthSnapshotInsert,
 } from '@/types'
 
+// ── Private helper ────────────────────────────────────────────────────────────
+
+type SupabaseClient = ReturnType<typeof createClient>
+
+async function resolveHouseholdId(supabase: SupabaseClient): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) throw new Error('Not authenticated')
+  const { data, error } = await supabase
+    .from('household_members')
+    .select('household_id')
+    .eq('user_id', session.user.id)
+    .single()
+  if (error) throw error
+  return data.household_id
+}
+
 // ── Budget categories ─────────────────────────────────────────────────────────
 
 export async function getBudgetCategories(month: string): Promise<BudgetCategory[]> {
@@ -24,9 +40,10 @@ export async function getBudgetCategories(month: string): Promise<BudgetCategory
 
 export async function createBudgetCategory(payload: BudgetCategoryInsert): Promise<BudgetCategory> {
   const supabase = createClient()
+  const household_id = await resolveHouseholdId(supabase)
   const { data, error } = await supabase
     .from('budget_categories')
-    .insert(payload)
+    .insert({ ...payload, household_id })
     .select()
     .single()
   if (error) throw error
@@ -66,9 +83,10 @@ export async function getIncomeSources(month: string): Promise<IncomeSource[]> {
 
 export async function createIncomeSource(payload: IncomeSourceInsert): Promise<IncomeSource> {
   const supabase = createClient()
+  const household_id = await resolveHouseholdId(supabase)
   const { data, error } = await supabase
     .from('income_sources')
-    .insert(payload)
+    .insert({ ...payload, household_id })
     .select()
     .single()
   if (error) throw error
@@ -107,9 +125,10 @@ export async function getRecurringPayments(): Promise<RecurringPayment[]> {
 
 export async function createRecurringPayment(payload: RecurringPaymentInsert): Promise<RecurringPayment> {
   const supabase = createClient()
+  const household_id = await resolveHouseholdId(supabase)
   const { data, error } = await supabase
     .from('recurring_payments')
-    .insert(payload)
+    .insert({ ...payload, household_id })
     .select()
     .single()
   if (error) throw error
@@ -148,9 +167,10 @@ export async function getDebts(): Promise<Debt[]> {
 
 export async function createDebt(payload: DebtInsert): Promise<Debt> {
   const supabase = createClient()
+  const household_id = await resolveHouseholdId(supabase)
   const { data, error } = await supabase
     .from('debts')
-    .insert(payload)
+    .insert({ ...payload, household_id })
     .select()
     .single()
   if (error) throw error
@@ -189,9 +209,10 @@ export async function getSavingsPods(): Promise<SavingsPod[]> {
 
 export async function createSavingsPod(payload: SavingsPodInsert): Promise<SavingsPod> {
   const supabase = createClient()
+  const household_id = await resolveHouseholdId(supabase)
   const { data, error } = await supabase
     .from('savings_pods')
-    .insert(payload)
+    .insert({ ...payload, household_id })
     .select()
     .single()
   if (error) throw error
@@ -230,9 +251,10 @@ export async function getAssets(): Promise<Asset[]> {
 
 export async function createAsset(payload: AssetInsert): Promise<Asset> {
   const supabase = createClient()
+  const household_id = await resolveHouseholdId(supabase)
   const { data, error } = await supabase
     .from('assets')
-    .insert(payload)
+    .insert({ ...payload, household_id })
     .select()
     .single()
   if (error) throw error
@@ -271,9 +293,10 @@ export async function getNetWorthSnapshots(): Promise<NetWorthSnapshot[]> {
 
 export async function createNetWorthSnapshot(payload: NetWorthSnapshotInsert): Promise<NetWorthSnapshot> {
   const supabase = createClient()
+  const household_id = await resolveHouseholdId(supabase)
   const { data, error } = await supabase
     .from('net_worth_snapshots')
-    .insert(payload)
+    .insert({ ...payload, household_id })
     .select()
     .single()
   if (error) throw error

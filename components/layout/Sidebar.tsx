@@ -5,6 +5,7 @@ import Link        from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/lib/context/auth'
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -106,6 +107,17 @@ function IconChevronRight() {
   )
 }
 
+function IconSignOut() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>
+      <polyline points="10,5 13,8 10,11"/>
+      <line x1="13" y1="8" x2="6" y2="8"/>
+    </svg>
+  )
+}
+
 // ── Nav config ────────────────────────────────────────────────────────────────
 
 type Intent = 'neutral' | 'tasks' | 'habits' | 'goals' | 'finance'
@@ -131,6 +143,7 @@ const ACTIVE: Record<Intent, string> = {
 export default function Sidebar() {
   const pathname = usePathname()
   const { resolvedTheme, setTheme } = useTheme()
+  const { displayName, signOut } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [mounted, setMounted] = useState(false)
 
@@ -153,6 +166,9 @@ export default function Sidebar() {
   function active(href: string) {
     return href === '/' ? pathname === '/' : pathname.startsWith(href)
   }
+
+  const initial = (displayName?.[0] ?? '?').toUpperCase()
+  const nameLabel = displayName ?? 'Loading…'
 
   return (
     <aside className={cn(
@@ -220,7 +236,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Avatar + theme toggle */}
+      {/* Avatar + theme toggle + sign out */}
       <div className={cn(
         'border-t-[0.5px] border-line-subtle flex-shrink-0',
         collapsed ? 'px-2 py-4 flex flex-col items-center gap-3' : 'px-4 py-4',
@@ -228,7 +244,7 @@ export default function Sidebar() {
         {collapsed ? (
           <>
             <div className="w-7 h-7 rounded-full bg-background border-[0.5px] border-line flex items-center justify-center flex-shrink-0">
-              <span className="text-[11px] text-foreground-secondary leading-none select-none">E</span>
+              <span className="text-[11px] text-foreground-secondary leading-none select-none">{initial}</span>
             </div>
             {mounted && (
               <button
@@ -240,13 +256,21 @@ export default function Sidebar() {
                 {resolvedTheme === 'dark' ? <IconSun /> : <IconMoon />}
               </button>
             )}
+            <button
+              type="button"
+              aria-label="Sign out"
+              onClick={signOut}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-foreground-tertiary hover:text-foreground hover:bg-background transition-colors"
+            >
+              <IconSignOut />
+            </button>
           </>
         ) : (
           <div className="flex items-center gap-[10px]">
             <div className="w-7 h-7 rounded-full bg-background border-[0.5px] border-line flex items-center justify-center flex-shrink-0">
-              <span className="text-[11px] text-foreground-secondary leading-none select-none">E</span>
+              <span className="text-[11px] text-foreground-secondary leading-none select-none">{initial}</span>
             </div>
-            <span className="text-[12px] text-foreground-secondary truncate flex-1">ethan2damax</span>
+            <span className="text-[12px] text-foreground-secondary truncate flex-1">{nameLabel}</span>
             {mounted && (
               <button
                 type="button"
@@ -257,6 +281,14 @@ export default function Sidebar() {
                 {resolvedTheme === 'dark' ? <IconSun /> : <IconMoon />}
               </button>
             )}
+            <button
+              type="button"
+              aria-label="Sign out"
+              onClick={signOut}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-foreground-tertiary hover:text-foreground hover:bg-background transition-colors flex-shrink-0"
+            >
+              <IconSignOut />
+            </button>
           </div>
         )}
       </div>
