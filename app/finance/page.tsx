@@ -430,38 +430,54 @@ function BudgetCategoryRow({
   useEffect(() => { setAct(String(category.actual))   }, [category.actual])
 
   const isRecurring = recurringTotal > 0
+  const isOver      = category.expected > 0 && category.actual > category.expected
+  const overBy      = isOver ? category.actual - category.expected : 0
 
   return (
-    <div className="flex items-center gap-2 py-[8px] border-b-[0.5px] border-line-subtle last:border-b-0 group">
-      <span className="flex-1 text-[13px] text-foreground truncate">
-        {category.name}
-        {isRecurring && (
-          <span className="ml-1 text-[11px] text-foreground-tertiary">(={fmtWhole(recurringTotal)})</span>
-        )}
-      </span>
-      <input
-        type="number"
-        min="0"
-        step="0.01"
-        value={exp}
-        onChange={e => setExp(e.target.value)}
-        onBlur={e => onUpdate(category.id, 'expected', e.target.value)}
-        className={`w-[88px] h-7 px-2 rounded-md border-[0.5px] border-line bg-background text-[12px] tabular-nums text-right focus:outline-none focus:border-finance transition-colors`}
-      />
-      <input
-        type="number"
-        min="0"
-        step="0.01"
-        value={act}
-        onChange={e => setAct(e.target.value)}
-        onBlur={e => onUpdate(category.id, 'actual', e.target.value)}
-        className={`w-[88px] h-7 px-2 rounded-md border-[0.5px] border-line bg-background text-[12px] tabular-nums text-right focus:outline-none focus:border-finance transition-colors`}
-      />
-      <button
-        type="button"
-        onClick={() => onDelete(category.id)}
-        className="w-5 text-[16px] leading-none text-foreground-tertiary hover:text-foreground-secondary opacity-0 group-hover:opacity-100 transition-opacity"
-      >×</button>
+    <div className="flex flex-col border-b-[0.5px] border-line-subtle last:border-b-0 group">
+      <div className="flex items-center gap-2 py-[8px]">
+        <span className="flex-1 text-[13px] text-foreground truncate">
+          {category.name}
+          {isRecurring && (
+            <span className="ml-1 text-[11px] text-foreground-tertiary">(={fmtWhole(recurringTotal)})</span>
+          )}
+        </span>
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          value={exp}
+          onChange={e => setExp(e.target.value)}
+          onBlur={e => onUpdate(category.id, 'expected', e.target.value)}
+          className="w-[88px] h-7 px-2 rounded-md border-[0.5px] border-line bg-background text-[12px] tabular-nums text-right focus:outline-none focus:border-finance transition-colors"
+        />
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          value={act}
+          onChange={e => setAct(e.target.value)}
+          onBlur={e => onUpdate(category.id, 'actual', e.target.value)}
+          className={
+            'w-[88px] h-7 px-2 rounded-md border-[0.5px] bg-background text-[12px] tabular-nums text-right focus:outline-none transition-colors ' +
+            (isOver
+              ? 'border-finance text-finance font-medium focus:border-finance'
+              : 'border-line focus:border-finance')
+          }
+        />
+        <button
+          type="button"
+          onClick={() => onDelete(category.id)}
+          className="w-5 text-[16px] leading-none text-foreground-tertiary hover:text-foreground-secondary opacity-0 group-hover:opacity-100 transition-opacity"
+        >×</button>
+      </div>
+      {isOver && (
+        <div className="flex items-center justify-end pb-[6px] -mt-[2px]">
+          <span className="text-[11px] text-finance tabular-nums">
+            +{fmtWhole(overBy)} over budget
+          </span>
+        </div>
+      )}
     </div>
   )
 }
