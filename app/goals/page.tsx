@@ -91,6 +91,7 @@ export default function GoalsPage() {
     const trimmedTitle = newTitle.trim()
     if (!trimmedTitle) return
     setAdding(true)
+    setError(null)
     try {
       const created = await createGoal({
         title:  trimmedTitle,
@@ -112,6 +113,8 @@ export default function GoalsPage() {
       setNewTitle('')
       setNewVision('')
       setNewTactics([''])
+    } catch (e) {
+      setError((e as { message?: string })?.message ?? 'Failed to add goal.')
     } finally {
       setAdding(false)
     }
@@ -258,6 +261,10 @@ export default function GoalsPage() {
         <MetricCard label="Active" value={loading ? '—' : counts.active} />
         <MetricCard label="Done"   value={loading ? '—' : counts.done} />
       </div>
+
+      {error && (
+        <p className="text-[13px] text-finance mb-3">{error}</p>
+      )}
 
       {/* ── Add goal form ── */}
       <form onSubmit={handleAdd} className="flex flex-col gap-2 mb-5">

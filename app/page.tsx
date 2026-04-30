@@ -4,12 +4,12 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { getTasks, updateTask, deleteTask }              from '@/lib/queries/tasks'
 import { getGoals, deleteGoal, getGoalHabitsWithHabits } from '@/lib/queries/goals'
 import { getHabits, getHabitLogsForWeek }                from '@/lib/queries/habits'
-import { getTransactions, getBudgets }                   from '@/lib/queries/finance'
+import { getIncomeSources, getBudgetCategories }          from '@/lib/queries/finance'
 import {
   todayStr, getWeekDates, pad,
   weekOfTwelve, addDays, countHabitDaysInDates,
 } from '@/lib/utils'
-import type { Task, Goal, Habit, Transaction, Budget, GoalHabitWithHabit } from '@/types'
+import type { Task, Goal, Habit, IncomeSource, BudgetCategory, GoalHabitWithHabit } from '@/types'
 import MetricCard   from '@/components/ui/MetricCard'
 import Card         from '@/components/ui/Card'
 import ProgressBar  from '@/components/ui/ProgressBar'
@@ -81,10 +81,17 @@ export default function DashboardPage() {
   const [habits,       setHabits]       = useState<Habit[]>([])
   const [logsByHabit,  setLogsByHabit]  = useState<Map<string, Set<string>>>(new Map())
   const [goalHabits,   setGoalHabits]   = useState<GoalHabitWithHabit[]>([])
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [budgets,      setBudgets]      = useState<Budget[]>([])
+  const [incomes,     setIncomes]     = useState<IncomeSource[]>([])
+  const [budgets,     setBudgets]     = useState<BudgetCategory[]>([])
   const [loading,      setLoading]      = useState(true)
   const [error,        setError]        = useState<string | null>(null)
+  const [greeting,     setGreeting]     = useState('')
+  const [dateStr,      setDateStr]      = useState('')
+
+  useEffect(() => {
+    setGreeting(getGreeting())
+    setDateStr(getDateStr())
+  }, [])
 
   const today        = useMemo(() => todayStr(),    [])
   const weekDates    = useMemo(() => getWeekDates(), [])
@@ -97,18 +104,18 @@ export default function DashboardPage() {
     setLoading(true)
     setError(null)
     try {
-      const [allTasks, allGoals, allHabits, txns, bgs] = await Promise.all([
+      const [allTasks, allGoals, allHabits, inc, cats] = await Promise.all([
         getTasks(),
         getGoals({ status: 'active' }),
         getHabits(),
-        getTransactions({ month: currentMonth }),
-        getBudgets(currentMonth),
+        getIncomeSources(currentMonth),
+        getBudgetCategories(currentMonth),
       ])
       setTasks(allTasks)
       setGoals(allGoals)
       setHabits(allHabits)
-      setTransactions(txns)
-      setBudgets(bgs)
+      setIncomes(inc)
+      setBudgets(cats)
 
       // Load habit logs (this week) and goal→habit links in parallel
       const goalIds = allGoals.map(g => g.id)
@@ -172,7 +179,7 @@ export default function DashboardPage() {
 
   const todayTasks = useMemo(() =>
     tasks
-      .filter(t => t.status !== 'done' && t.due_date !== null && t.due_date <= today)
+      .filter(t => t.status !== 'done' && (t.due_date === null || t.due_date <= today))
       .slice(0, 8),
     [tasks, today],
   )
@@ -192,28 +199,21 @@ export default function DashboardPage() {
     [habitsToday, logsByHabit, today],
   )
 
-  const totalExpenses = useMemo(() =>
-    transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0),
-    [transactions],
+  const totalExpectedIncome = useMemo(() =>
+    incomes.reduce((s, i) => s + i.expected, 0),
+    [incomes],
   )
 
-  const totalBudgetLimit = useMemo(() =>
-    budgets.reduce((s, b) => s + b.limit_amount, 0),
+  const totalBudgeted = useMemo(() =>
+    budgets.reduce((s, b) => s + b.expected, 0),
     [budgets],
   )
 
-  const spentByCategory = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const t of transactions) {
-      if (t.type !== 'expense' || !t.category) continue
-      map.set(t.category, (map.get(t.category) ?? 0) + t.amount)
-    }
-    return map
-  }, [transactions])
+  const leftover = totalExpectedIncome - totalBudgeted
 
-  const budgetPctStr = totalBudgetLimit > 0
-    ? `${Math.round(totalExpenses / totalBudgetLimit * 100)}%`
-    : '—'
+  function fmtWhole(n: number): string {
+    return `$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+  }
 
   const focusGoal = goals[0] ?? null
 
@@ -263,10 +263,10 @@ export default function DashboardPage() {
 
       {/* Greeting */}
       <h1 className="text-[20px] font-medium text-foreground mb-[2px]">
-        {getGreeting()}
+        {greeting}
       </h1>
       <p className="text-[14px] text-foreground-secondary mb-6">
-        {getDateStr()}
+        {dateStr}
       </p>
 
       {error && (
@@ -315,8 +315,8 @@ export default function DashboardPage() {
         />
         <MetricCard
           label="Budget"
-          value={loading ? '—' : budgetPctStr}
-          sub={!loading && totalBudgetLimit > 0 ? 'of monthly limit' : undefined}
+          value={loading ? '—' : fmtWhole(Math.abs(leftover))}
+          sub={!loading ? (leftover < 0 ? 'over income' : 'unallocated') : undefined}
         />
       </div>
 
@@ -385,15 +385,11 @@ export default function DashboardPage() {
             {loading ? (
               <p className="text-[13px] text-foreground-tertiary py-1">Loading…</p>
             ) : budgets.length === 0 ? (
-              <p className="text-[13px] text-foreground-tertiary py-1">No budgets this month.</p>
+              <p className="text-[13px] text-foreground-tertiary py-1">No budget set this month.</p>
             ) : (
               <div>
                 {budgets.map(b => (
-                  <BudgetRow
-                    key={b.id}
-                    budget={b}
-                    spent={spentByCategory.get(b.category) ?? 0}
-                  />
+                  <BudgetRow key={b.id} category={b} />
                 ))}
               </div>
             )}
