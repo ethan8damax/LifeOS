@@ -255,7 +255,7 @@ export default function DashboardPage() {
   const focusWeekNum = focusGoal ? weekOfTwelve(focusStartDate, today) : 1
 
   return (
-    <div className="p-6 max-w-3xl">
+    <div className="p-6 max-w-3xl mx-auto">
 
       {/* Greeting */}
       <h1 className="text-[20px] font-medium text-foreground mb-[2px]">
@@ -298,7 +298,7 @@ export default function DashboardPage() {
       )}
 
       {/* Metric cards */}
-      <div className="grid grid-cols-3 gap-[10px] mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-[10px] mb-6">
         <MetricCard
           label="Tasks today"
           value={loading ? '—' : todayTasks.length}
@@ -317,7 +317,7 @@ export default function DashboardPage() {
       </div>
 
       {/* 2-column content grid */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
         {/* Left column: tasks + goals */}
         <div className="flex flex-col gap-4">

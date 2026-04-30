@@ -192,7 +192,7 @@ export default function FinancePage() {
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-6 max-w-3xl">
+    <div className="p-6 max-w-3xl mx-auto">
       <h1 className="text-[20px] font-medium text-foreground mb-5">Finance</h1>
 
       {/* Tab bar */}
@@ -1089,7 +1089,7 @@ function NetWorthTab({
   return (
     <div>
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-[10px] mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-[10px] mb-5">
         <div className="bg-background-secondary rounded-lg p-[14px]">
           <p className="text-[12px] text-foreground-secondary mb-1">Total assets</p>
           <p className="text-[20px] font-medium tabular-nums text-foreground">{fmtWhole(totalAssets)}</p>

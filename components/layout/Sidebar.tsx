@@ -1,12 +1,12 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link        from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
-// 16×16, stroke="currentColor", fill="none", strokeWidth=1.5
 
 function IconGrid() {
   return (
@@ -88,6 +88,24 @@ function IconMoon() {
   )
 }
 
+function IconChevronLeft() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="10,3 5,8 10,13"/>
+    </svg>
+  )
+}
+
+function IconChevronRight() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6,3 11,8 6,13"/>
+    </svg>
+  )
+}
+
 // ── Nav config ────────────────────────────────────────────────────────────────
 
 type Intent = 'neutral' | 'tasks' | 'habits' | 'goals' | 'finance'
@@ -113,60 +131,134 @@ const ACTIVE: Record<Intent, string> = {
 export default function Sidebar() {
   const pathname = usePathname()
   const { resolvedTheme, setTheme } = useTheme()
+  const [collapsed, setCollapsed] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    try {
+      const saved = localStorage.getItem('sidebar-collapsed')
+      if (saved === 'true') setCollapsed(true)
+    } catch {}
+  }, [])
+
+  function toggle() {
+    setCollapsed(prev => {
+      const next = !prev
+      try { localStorage.setItem('sidebar-collapsed', String(next)) } catch {}
+      return next
+    })
+  }
 
   function active(href: string) {
     return href === '/' ? pathname === '/' : pathname.startsWith(href)
   }
 
   return (
-    <aside className="w-[220px] flex-shrink-0 flex flex-col h-screen bg-background-secondary border-r-[0.5px] border-line-subtle">
+    <aside className={cn(
+      'hidden md:flex flex-col flex-shrink-0 h-screen bg-background-secondary border-r-[0.5px] border-line-subtle transition-[width] duration-200 overflow-hidden',
+      collapsed ? 'w-14' : 'w-[220px]',
+    )}>
 
-      {/* Logo */}
-      <div className="flex items-center gap-[10px] px-5 py-[18px] border-b-[0.5px] border-line-subtle">
+      {/* Logo + collapse toggle */}
+      <div className={cn(
+        'flex items-center border-b-[0.5px] border-line-subtle flex-shrink-0',
+        collapsed ? 'justify-center px-0 h-[57px]' : 'gap-[10px] px-5 h-[57px]',
+      )}>
         <div className="w-[28px] h-[28px] rounded-lg bg-goals flex items-center justify-center flex-shrink-0">
           <span className="text-[11px] font-medium text-white leading-none select-none">LO</span>
         </div>
-        <span className="text-[14px] font-medium text-foreground">Life OS</span>
+        {!collapsed && (
+          <>
+            <span className="text-[14px] font-medium text-foreground flex-1 whitespace-nowrap">Life OS</span>
+            <button
+              type="button"
+              aria-label="Collapse sidebar"
+              onClick={toggle}
+              className="w-6 h-6 rounded-md flex items-center justify-center text-foreground-tertiary hover:text-foreground hover:bg-background transition-colors flex-shrink-0"
+            >
+              <IconChevronLeft />
+            </button>
+          </>
+        )}
+        {collapsed && (
+          <button
+            type="button"
+            aria-label="Expand sidebar"
+            onClick={toggle}
+            className="absolute left-0 w-14 h-[57px] flex items-center justify-center text-transparent hover:text-foreground-tertiary transition-colors"
+          >
+            <IconChevronRight />
+          </button>
+        )}
       </div>
 
       {/* Nav items */}
-      <nav className="flex-1 px-3 py-4 flex flex-col gap-[2px]">
+      <nav className={cn(
+        'flex-1 py-4 flex flex-col gap-[2px]',
+        collapsed ? 'px-2' : 'px-3',
+      )}>
         {NAV.map(item => {
           const isActive = active(item.href)
           return (
             <Link
               key={item.href}
               href={item.href}
+              title={collapsed ? item.label : undefined}
               className={cn(
-                'flex items-center gap-[10px] px-3 h-9 rounded-lg text-[13px] transition-colors',
+                'flex items-center h-9 rounded-lg text-[13px] transition-colors',
+                collapsed ? 'justify-center' : 'gap-[10px] px-3',
                 isActive
                   ? cn('font-medium', ACTIVE[item.intent])
                   : 'text-foreground-secondary hover:bg-background hover:text-foreground',
               )}
             >
-              {item.icon}
-              {item.label}
+              <span className="flex-shrink-0">{item.icon}</span>
+              {!collapsed && <span className="whitespace-nowrap">{item.label}</span>}
             </Link>
           )
         })}
       </nav>
 
       {/* Avatar + theme toggle */}
-      <div className="px-4 py-4 border-t-[0.5px] border-line-subtle">
-        <div className="flex items-center gap-[10px]">
-          <div className="w-7 h-7 rounded-full bg-background border-[0.5px] border-line flex items-center justify-center flex-shrink-0">
-            <span className="text-[11px] text-foreground-secondary leading-none select-none">E</span>
+      <div className={cn(
+        'border-t-[0.5px] border-line-subtle flex-shrink-0',
+        collapsed ? 'px-2 py-4 flex flex-col items-center gap-3' : 'px-4 py-4',
+      )}>
+        {collapsed ? (
+          <>
+            <div className="w-7 h-7 rounded-full bg-background border-[0.5px] border-line flex items-center justify-center flex-shrink-0">
+              <span className="text-[11px] text-foreground-secondary leading-none select-none">E</span>
+            </div>
+            {mounted && (
+              <button
+                type="button"
+                aria-label="Toggle theme"
+                onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-foreground-tertiary hover:text-foreground hover:bg-background transition-colors"
+              >
+                {resolvedTheme === 'dark' ? <IconSun /> : <IconMoon />}
+              </button>
+            )}
+          </>
+        ) : (
+          <div className="flex items-center gap-[10px]">
+            <div className="w-7 h-7 rounded-full bg-background border-[0.5px] border-line flex items-center justify-center flex-shrink-0">
+              <span className="text-[11px] text-foreground-secondary leading-none select-none">E</span>
+            </div>
+            <span className="text-[12px] text-foreground-secondary truncate flex-1">ethan2damax</span>
+            {mounted && (
+              <button
+                type="button"
+                aria-label="Toggle theme"
+                onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-foreground-tertiary hover:text-foreground hover:bg-background transition-colors flex-shrink-0"
+              >
+                {resolvedTheme === 'dark' ? <IconSun /> : <IconMoon />}
+              </button>
+            )}
           </div>
-          <span className="text-[12px] text-foreground-secondary truncate flex-1">ethan2damax</span>
-          <button
-            type="button"
-            aria-label="Toggle theme"
-            onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-foreground-tertiary hover:text-foreground hover:bg-background transition-colors flex-shrink-0"
-          >
-            {resolvedTheme === 'dark' ? <IconSun /> : <IconMoon />}
-          </button>
-        </div>
+        )}
       </div>
 
     </aside>

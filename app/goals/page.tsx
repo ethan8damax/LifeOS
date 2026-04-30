@@ -247,7 +247,7 @@ export default function GoalsPage() {
   }
 
   return (
-    <div className="p-6 max-w-3xl">
+    <div className="p-6 max-w-3xl mx-auto">
 
       {/* Page header */}
       <h1 className="text-[20px] font-medium text-foreground mb-[2px]">Goals</h1>
@@ -256,7 +256,7 @@ export default function GoalsPage() {
       </p>
 
       {/* Metrics */}
-      <div className="grid grid-cols-3 gap-[10px] mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-[10px] mb-6">
         <MetricCard label="Total"  value={loading ? '—' : counts.all} />
         <MetricCard label="Active" value={loading ? '—' : counts.active} />
         <MetricCard label="Done"   value={loading ? '—' : counts.done} />

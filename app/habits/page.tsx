@@ -170,7 +170,7 @@ export default function HabitsPage() {
     'focus:outline-none focus:border-[1px] focus:border-habits transition-colors'
 
   return (
-    <div className="p-6 max-w-3xl">
+    <div className="p-6 max-w-3xl mx-auto">
 
       {/* Page header */}
       <h1 className="text-[20px] font-medium text-foreground mb-[2px]">Habits</h1>
@@ -183,7 +183,7 @@ export default function HabitsPage() {
       </p>
 
       {/* Metrics row */}
-      <div className="grid grid-cols-3 gap-[10px] mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-[10px] mb-6">
         <MetricCard label="Habits"       value={loading ? '—' : habits.length} />
         <MetricCard
           label="Logged today"
