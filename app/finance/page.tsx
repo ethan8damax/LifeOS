@@ -218,7 +218,7 @@ export default function FinancePage() {
         <p className="text-[13px] text-foreground-tertiary">Loading…</p>
       ) : (
         <>
-          {tab === 'budget'    && <BudgetTab    month={month} setMonth={setMonth} categories={categories} setCategories={setCategories} incomes={incomes} leftover={leftover} totalExpectedIncome={totalExpectedIncome} totalBudgeted={totalBudgeted} recurringTotal={recurringTotal} />}
+          {tab === 'budget'    && <BudgetTab    month={month} setMonth={setMonth} categories={categories} setCategories={setCategories} leftover={leftover} totalExpectedIncome={totalExpectedIncome} totalBudgeted={totalBudgeted} recurringTotal={recurringTotal} />}
           {tab === 'income'    && <IncomeTab    month={month} setMonth={setMonth} incomes={incomes} setIncomes={setIncomes} />}
           {tab === 'recurring' && <RecurringTab recurrings={recurrings} setRecurrings={setRecurrings} recurringTotal={recurringTotal} />}
           {tab === 'savings'   && <SavingsTab   pods={pods} setPods={setPods} totalAllotted={totalAllotted} totalPodGoal={totalPodGoal} savingsBalance={assets.filter(a => a.type === 'savings').reduce((s, a) => s + a.balance, 0)} />}
@@ -232,14 +232,13 @@ export default function FinancePage() {
 // ── Budget tab ────────────────────────────────────────────────────────────────
 
 function BudgetTab({
-  month, setMonth, categories, setCategories, incomes, leftover,
+  month, setMonth, categories, setCategories, leftover,
   totalExpectedIncome, totalBudgeted, recurringTotal,
 }: {
   month: string
   setMonth: (m: string) => void
   categories: BudgetCategory[]
   setCategories: React.Dispatch<React.SetStateAction<BudgetCategory[]>>
-  incomes: IncomeSource[]
   leftover: number
   totalExpectedIncome: number
   totalBudgeted: number

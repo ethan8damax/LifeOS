@@ -7,12 +7,11 @@ import { getHabits, getHabitLogsForWeek }                from '@/lib/queries/hab
 import { getIncomeSources, getBudgetCategories }          from '@/lib/queries/finance'
 import {
   todayStr, getWeekDates, pad,
-  weekOfTwelve, addDays, countHabitDaysInDates,
+  weekOfTwelve, countHabitDaysInDates,
 } from '@/lib/utils'
 import type { Task, Goal, Habit, IncomeSource, BudgetCategory, GoalHabitWithHabit } from '@/types'
 import MetricCard   from '@/components/ui/MetricCard'
 import Card         from '@/components/ui/Card'
-import ProgressBar  from '@/components/ui/ProgressBar'
 import TaskList     from '@/components/tasks/TaskList'
 import GoalProgress from '@/components/goals/GoalProgress'
 import HabitDots    from '@/components/habits/HabitDots'
@@ -252,9 +251,6 @@ export default function DashboardPage() {
 
   const focusStartDate = focusGoal
     ? (focusGoal.start_date ?? focusGoal.created_at?.slice(0, 10) ?? today)
-    : today
-  const focusEndDate = focusGoal
-    ? (focusGoal.end_date ?? addDays(focusStartDate, 83))
     : today
   const focusWeekNum = focusGoal ? weekOfTwelve(focusStartDate, today) : 1
 

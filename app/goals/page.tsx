@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
-  getGoals, createGoal, updateGoal, deleteGoal,
+  getGoals, createGoal, deleteGoal,
   getGoalHabitsWithHabits, linkHabitToGoal, unlinkHabitFromGoal,
 } from '@/lib/queries/goals'
 import { createTask, updateTask, getTasksByGoalIds } from '@/lib/queries/tasks'
 import { getHabits }                                 from '@/lib/queries/habits'
 import { getHabitLogsForWeek }                       from '@/lib/queries/habits'
-import { todayStr, getWeekDates, addDays }            from '@/lib/utils'
+import { todayStr, getWeekDates }                     from '@/lib/utils'
 import type { Goal, Habit, Task, GoalHabitWithHabit } from '@/types'
 import MetricCard from '@/components/ui/MetricCard'
 import Card       from '@/components/ui/Card'

@@ -3,11 +3,10 @@
 import { useState } from 'react'
 import type { Goal, Habit, Task } from '@/types'
 import Badge       from '@/components/ui/Badge'
-import { cn, datesInRange, countHabitDaysInDates, weekOfTwelve, addDays, todayStr } from '@/lib/utils'
+import { cn, datesInRange, countHabitDaysInDates, weekOfTwelve, addDays } from '@/lib/utils'
 
 // ── Scoring helpers ───────────────────────────────────────────────────────────
 
-const WEEK_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 const JS_DAY_TO_KEY: Record<number, string> = {
   0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat',
 }
