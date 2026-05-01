@@ -12,6 +12,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [confirmEmail, setConfirmEmail] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -20,7 +21,7 @@ export default function SignupPage() {
 
     try {
       const supabase = createClient()
-      const { error: authError } = await supabase.auth.signUp({
+      const { data, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -29,6 +30,12 @@ export default function SignupPage() {
       })
       if (authError) {
         setError(authError.message)
+        return
+      }
+      // If email confirmation is required, data.session is null — show a message
+      // instead of navigating (middleware would block /onboarding without a session).
+      if (!data.session) {
+        setConfirmEmail(true)
         return
       }
       router.push('/onboarding')
@@ -50,6 +57,22 @@ export default function SignupPage() {
 
         {/* Card */}
         <div className="bg-background border-[0.5px] border-line-subtle rounded-xl p-6">
+          {confirmEmail ? (
+            <>
+              <h1 className="text-[18px] font-medium text-foreground mb-2">Check your email</h1>
+              <p className="text-[13px] text-foreground-secondary mb-4">
+                We sent a confirmation link to <span className="text-foreground">{email}</span>.
+                Click it to activate your account, then sign in.
+              </p>
+              <Link
+                href="/login"
+                className="block h-9 px-4 rounded-lg bg-goals text-white text-[13px] font-medium text-center leading-9"
+              >
+                Go to sign in
+              </Link>
+            </>
+          ) : (
+          <>
           <h1 className="text-[18px] font-medium text-foreground mb-1">Create account</h1>
           <p className="text-[13px] text-foreground-tertiary mb-6">Get started with Life OS.</p>
 
@@ -115,6 +138,8 @@ export default function SignupPage() {
               {loading ? 'Creating account…' : 'Create account'}
             </button>
           </form>
+          </>
+          )}
         </div>
 
         <p className="text-center text-[12px] text-foreground-tertiary mt-4">
