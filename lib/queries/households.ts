@@ -8,16 +8,15 @@ import { createClient } from '@/lib/supabase'
  */
 export async function createHousehold(name: string): Promise<{ id: string; invite_code: string }> {
   const supabase = createClient()
+  const id = crypto.randomUUID()
   const inviteCode = generateInviteCode()
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('households')
-    .insert({ name, invite_code: inviteCode })
-    .select('id, invite_code')
-    .single()
+    .insert({ id, name, invite_code: inviteCode })
 
   if (error) throw error
-  return { id: data.id, invite_code: data.invite_code ?? inviteCode }
+  return { id, invite_code: inviteCode }
 }
 
 /**
