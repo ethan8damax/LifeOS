@@ -133,10 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signOut() {
     await supabase.auth.signOut()
-    setUser(null)
-    setDisplayName(null)
-    setHouseholdId(null)
-    router.push('/login')
+    // onAuthStateChange fires with null session and clears state + triggers redirect
   }
 
   return (
