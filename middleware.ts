@@ -1,51 +1,61 @@
 import { createServerClient } from '@supabase/ssr'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/login', '/signup']
+// Paths that do not require a session
+const PUBLIC_PATHS = ['/login', '/signup', '/join']
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: { headers: request.headers },
-  })
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name) {
-          return request.cookies.get(name)?.value
+        getAll() {
+          return request.cookies.getAll()
         },
-        set(name, value, options) {
-          request.cookies.set({ name, value, ...options })
-          response = NextResponse.next({ request: { headers: request.headers } })
-          response.cookies.set({ name, value, ...options })
-        },
-        remove(name, options) {
-          request.cookies.set({ name, value: '', ...options })
-          response = NextResponse.next({ request: { headers: request.headers } })
-          response.cookies.set({ name, value: '', ...options })
+        setAll(cookiesToSet) {
+          // Forward cookies to the outgoing request so the refreshed session
+          // is readable by subsequent Server Components in the same render pass.
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options),
+          )
         },
       },
-    }
+    },
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
-  const pathname = request.nextUrl.pathname
-  const isPublicPath = PUBLIC_PATHS.some(p => pathname.startsWith(p))
+  // IMPORTANT: always call getUser() — never getSession() — in middleware.
+  // getUser() validates the JWT against Supabase's auth server, ensures tokens
+  // are refreshed, and is the only reliable way to confirm a valid session.
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!session && !isPublicPath) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  const { pathname } = request.nextUrl
+  const isPublic = PUBLIC_PATHS.some(p => pathname.startsWith(p))
+
+  // No session → send to login
+  if (!user && !isPublic) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
   }
 
-  if (session && isPublicPath) {
-    return NextResponse.redirect(new URL('/', request.url))
+  // Has session → send away from auth pages to the app
+  if (user && isPublic) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
   }
 
-  return response
+  // Return the response — it carries any refreshed session cookies
+  return supabaseResponse
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }

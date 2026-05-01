@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 
-const AUTH_PATHS = ['/login', '/signup', '/onboarding']
+const AUTH_PATHS = ['/login', '/signup', '/join']
 
 export default function AppShell({
   sidebar,

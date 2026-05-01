@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import type {
   BudgetCategory, BudgetCategoryInsert, BudgetCategoryUpdate,
   IncomeSource, IncomeSourceInsert, IncomeSourceUpdate,

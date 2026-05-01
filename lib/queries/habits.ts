@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import type { Habit, HabitInsert, HabitUpdate, HabitLog, HabitLogInsert } from '@/types'
 
 // ── Habits ────────────────────────────────────────────────────────────────────

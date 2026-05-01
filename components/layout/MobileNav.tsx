@@ -77,7 +77,7 @@ const ACTIVE_TEXT: Record<Intent, string> = {
   finance: 'text-finance',
 }
 
-const AUTH_PATHS = ['/login', '/signup', '/onboarding']
+const AUTH_PATHS = ['/login', '/signup', '/join']
 
 export default function MobileNav() {
   const pathname = usePathname()

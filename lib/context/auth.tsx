@@ -1,85 +1,79 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
-import { createClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 
 interface AuthContextValue {
-  user: User | null
-  displayName: string | null
-  householdId: string | null
-  loading: boolean
-  signOut: () => Promise<void>
+  user:             User | null
+  displayName:      string | null
+  householdId:      string | null
+  loading:          boolean
+  signOut:          () => Promise<void>
   refreshHousehold: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue>({
-  user: null,
-  displayName: null,
-  householdId: null,
-  loading: true,
-  signOut: async () => {},
+  user:             null,
+  displayName:      null,
+  householdId:      null,
+  loading:          true,
+  signOut:          async () => {},
   refreshHousehold: async () => {},
 })
 
-const PUBLIC_PATHS = ['/login', '/signup']
-const ONBOARDING_PATH = '/onboarding'
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const pathname = usePathname()
-  const [user, setUser] = useState<User | null>(null)
+  const [user,        setUser]        = useState<User | null>(null)
   const [displayName, setDisplayName] = useState<string | null>(null)
   const [householdId, setHouseholdId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading,     setLoading]     = useState(true)
 
-  const supabase = createClient()
-
-  const fetchHousehold = useCallback(async (userId: string, currentUser: User) => {
-    const { data, error } = await supabase
+  async function fetchHousehold(userId: string, currentUser: User) {
+    const supabase = createClient()
+    const { data } = await supabase
       .from('household_members')
       .select('household_id, display_name')
       .eq('user_id', userId)
       .maybeSingle()
 
-    if (!error && data) {
+    if (data) {
       setHouseholdId(data.household_id)
-      const name =
+      setDisplayName(
         data.display_name ??
         (currentUser.user_metadata?.display_name as string | undefined) ??
-        (currentUser.email?.split('@')[0] ?? null)
-      setDisplayName(name)
+        currentUser.email?.split('@')[0] ?? null,
+      )
     } else {
       setHouseholdId(null)
-      const name =
+      setDisplayName(
         (currentUser.user_metadata?.display_name as string | undefined) ??
-        (currentUser.email?.split('@')[0] ?? null)
-      setDisplayName(name)
+        currentUser.email?.split('@')[0] ?? null,
+      )
     }
-  }, [supabase])
+  }
 
   const refreshHousehold = useCallback(async () => {
-    if (!user) return
-    await fetchHousehold(user.id, user)
-  }, [user, fetchHousehold])
+    if (user) await fetchHousehold(user.id, user)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   useEffect(() => {
+    const supabase = createClient()
     let mounted = true
 
-    async function init() {
-      const { data: { session } } = await supabase.auth.getSession()
+    // Initial session check
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return
-
       if (session?.user) {
         setUser(session.user)
         await fetchHousehold(session.user.id, session.user)
       }
       setLoading(false)
-    }
+    })
 
-    init()
-
+    // Keep in sync with Supabase auth state (token refresh, sign-out from another tab, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!mounted) return
       if (session?.user) {
@@ -100,40 +94,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Client-side redirect logic
-  useEffect(() => {
-    if (loading) return
-
-    const isPublic = PUBLIC_PATHS.some(p => pathname.startsWith(p))
-    const isOnboarding = pathname.startsWith(ONBOARDING_PATH)
-
-    if (!user && !isPublic) {
-      router.replace('/login')
-      return
-    }
-
-    if (user && !householdId && !isOnboarding && !isPublic) {
-      router.replace('/onboarding')
-      return
-    }
-
-    // Redirect away from public auth pages once signed in
-    if (user && householdId && isPublic) {
-      router.replace('/')
-      return
-    }
-
-    // Redirect away from onboarding if household is already set
-    // (handles "Go to dashboard" race and direct URL access)
-    if (user && householdId && isOnboarding) {
-      router.replace('/')
-      return
-    }
-  }, [loading, user, householdId, pathname, router])
-
   async function signOut() {
-    await supabase.auth.signOut()
-    // onAuthStateChange fires with null session and clears state + triggers redirect
+    const supabase = createClient()
+    const { error } = await supabase.auth.signOut()
+    if (error) console.error('Sign out error:', error)
+    // Hard-navigate to ensure all client state is cleared
+    router.push('/login')
   }
 
   return (

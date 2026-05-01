@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import type { List, ListInsert, ListUpdate, ListItem, ListItemInsert, ListItemUpdate, ListWithItems } from '@/types'
 
 // ── Lists ─────────────────────────────────────────────────────────────────────
