@@ -129,6 +129,42 @@ export type Database = {
           },
         ]
       }
+      goal_lists: {
+        Row: {
+          id:       string
+          goal_id:  string | null
+          list_id:  string | null
+          user_id:  string | null
+        }
+        Insert: {
+          id?:      string
+          goal_id?: string | null
+          list_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?:      string
+          goal_id?: string | null
+          list_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'goal_lists_goal_id_fkey'
+            columns: ['goal_id']
+            isOneToOne: false
+            referencedRelation: 'goals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'goal_lists_list_id_fkey'
+            columns: ['list_id']
+            isOneToOne: false
+            referencedRelation: 'lists'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       goals: {
         Row: {
           id:          string
@@ -315,6 +351,83 @@ export type Database = {
         }
         Relationships: []
       }
+      list_items: {
+        Row: {
+          id:         string
+          list_id:    string | null
+          user_id:    string | null
+          content:    string
+          is_checked: boolean
+          sort_order: number
+          created_at: string | null
+        }
+        Insert: {
+          id?:         string
+          list_id?:    string | null
+          user_id?:    string | null
+          content:     string
+          is_checked?: boolean
+          sort_order?: number
+          created_at?: string | null
+        }
+        Update: {
+          id?:         string
+          list_id?:    string | null
+          user_id?:    string | null
+          content?:    string
+          is_checked?: boolean
+          sort_order?: number
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'list_items_list_id_fkey'
+            columns: ['list_id']
+            isOneToOne: false
+            referencedRelation: 'lists'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      lists: {
+        Row: {
+          id:          string
+          user_id:     string | null
+          title:       string
+          description: string | null
+          color:       string
+          icon:        string
+          is_pinned:   boolean
+          sort_order:  number
+          created_at:  string | null
+          updated_at:  string | null
+        }
+        Insert: {
+          id?:          string
+          user_id?:     string | null
+          title:        string
+          description?: string | null
+          color?:       string
+          icon?:        string
+          is_pinned?:   boolean
+          sort_order?:  number
+          created_at?:  string | null
+          updated_at?:  string | null
+        }
+        Update: {
+          id?:          string
+          user_id?:     string | null
+          title?:       string
+          description?: string | null
+          color?:       string
+          icon?:        string
+          is_pinned?:   boolean
+          sort_order?:  number
+          created_at?:  string | null
+          updated_at?:  string | null
+        }
+        Relationships: []
+      }
       net_worth_snapshots: {
         Row: {
           id:            string
@@ -344,41 +457,6 @@ export type Database = {
           household_id?:  string | null
         }
         Relationships: []
-      }
-      projects: {
-        Row: {
-          id:         string
-          title:      string
-          status:     string | null
-          goal_id:    string | null
-          created_at: string | null
-          user_id?:   string | null
-        }
-        Insert: {
-          id?:         string
-          title:       string
-          status?:     string | null
-          goal_id?:    string | null
-          created_at?: string | null
-          user_id?:    string | null
-        }
-        Update: {
-          id?:         string
-          title?:      string
-          status?:     string | null
-          goal_id?:    string | null
-          created_at?: string | null
-          user_id?:    string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'projects_goal_id_fkey'
-            columns: ['goal_id']
-            isOneToOne: false
-            referencedRelation: 'goals'
-            referencedColumns: ['id']
-          },
-        ]
       }
       recurring_payments: {
         Row: {
@@ -425,69 +503,6 @@ export type Database = {
         }
         Relationships: []
       }
-      tasks: {
-        Row: {
-          id:           string
-          title:        string
-          notes:        string | null
-          status:       string | null
-          priority:     string | null
-          due_date:     string | null
-          project_id:   string | null
-          goal_id:      string | null
-          tag:          string | null
-          is_recurring: boolean | null
-          recur_rule:   string | null
-          created_at:   string | null
-          user_id?:     string | null
-        }
-        Insert: {
-          id?:           string
-          title:         string
-          notes?:        string | null
-          status?:       string | null
-          priority?:     string | null
-          due_date?:     string | null
-          project_id?:   string | null
-          goal_id?:      string | null
-          tag?:          string | null
-          is_recurring?: boolean | null
-          recur_rule?:   string | null
-          created_at?:   string | null
-          user_id?:      string | null
-        }
-        Update: {
-          id?:           string
-          title?:        string
-          notes?:        string | null
-          status?:       string | null
-          priority?:     string | null
-          due_date?:     string | null
-          project_id?:   string | null
-          goal_id?:      string | null
-          tag?:          string | null
-          is_recurring?: boolean | null
-          recur_rule?:   string | null
-          created_at?:   string | null
-          user_id?:      string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'tasks_project_id_fkey'
-            columns: ['project_id']
-            isOneToOne: false
-            referencedRelation: 'projects'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'tasks_goal_id_fkey'
-            columns: ['goal_id']
-            isOneToOne: false
-            referencedRelation: 'goals'
-            referencedColumns: ['id']
-          },
-        ]
-      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -498,8 +513,9 @@ export type Database = {
 
 // ── Row types ─────────────────────────────────────────────────────────────────
 
-export type Task             = Database['public']['Tables']['tasks']['Row']
-export type Project          = Database['public']['Tables']['projects']['Row']
+export type List             = Database['public']['Tables']['lists']['Row']
+export type ListItem         = Database['public']['Tables']['list_items']['Row']
+export type GoalList         = Database['public']['Tables']['goal_lists']['Row']
 export type Goal             = Database['public']['Tables']['goals']['Row']
 export type GoalHabit        = Database['public']['Tables']['goal_habits']['Row']
 export type Habit            = Database['public']['Tables']['habits']['Row']
@@ -516,8 +532,9 @@ export type HouseholdMember  = Database['public']['Tables']['household_members']
 
 // ── Insert types ──────────────────────────────────────────────────────────────
 
-export type TaskInsert             = Database['public']['Tables']['tasks']['Insert']
-export type ProjectInsert          = Database['public']['Tables']['projects']['Insert']
+export type ListInsert             = Database['public']['Tables']['lists']['Insert']
+export type ListItemInsert         = Database['public']['Tables']['list_items']['Insert']
+export type GoalListInsert         = Database['public']['Tables']['goal_lists']['Insert']
 export type GoalInsert             = Database['public']['Tables']['goals']['Insert']
 export type GoalHabitInsert        = Database['public']['Tables']['goal_habits']['Insert']
 export type HabitInsert            = Database['public']['Tables']['habits']['Insert']
@@ -534,8 +551,8 @@ export type HouseholdMemberInsert  = Database['public']['Tables']['household_mem
 
 // ── Update types ──────────────────────────────────────────────────────────────
 
-export type TaskUpdate             = Database['public']['Tables']['tasks']['Update']
-export type ProjectUpdate          = Database['public']['Tables']['projects']['Update']
+export type ListUpdate             = Database['public']['Tables']['lists']['Update']
+export type ListItemUpdate         = Database['public']['Tables']['list_items']['Update']
 export type GoalUpdate             = Database['public']['Tables']['goals']['Update']
 export type GoalHabitUpdate        = Database['public']['Tables']['goal_habits']['Update']
 export type HabitUpdate            = Database['public']['Tables']['habits']['Update']
@@ -555,3 +572,5 @@ export type GoalHabitWithHabit = {
   habit_id: string
   habit:    Habit
 }
+
+export type ListWithItems = List & { items: ListItem[] }

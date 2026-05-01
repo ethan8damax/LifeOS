@@ -1,15 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import type { Goal, Habit, Task } from '@/types'
+import type { Goal, Habit, List, ListWithItems } from '@/types'
 import Badge       from '@/components/ui/Badge'
 import { cn, datesInRange, countHabitDaysInDates, weekOfTwelve, addDays } from '@/lib/utils'
 
 // ── Scoring helpers ───────────────────────────────────────────────────────────
-
-const JS_DAY_TO_KEY: Record<number, string> = {
-  0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat',
-}
 
 function avg(parts: (number | null)[]): number | null {
   const valid = parts.filter((p): p is number => p !== null)
@@ -21,7 +17,7 @@ function pct(num: number, den: number): number | null {
 }
 
 function calcScores(
-  tactics:          Task[],
+  linkedLists:      ListWithItems[],
   linkedHabits:     Habit[],
   habitLogsByHabit: Map<string, Set<string>>,
   weekDates:        string[],
@@ -31,10 +27,10 @@ function calcScores(
 ) {
   const periodEnd = today < endDate ? today : endDate
 
-  // Tactic completion — same numerator/denominator for both time horizons
-  const tacticTotal = tactics.length
-  const tacticDone  = tactics.filter(t => t.status === 'done').length
-  const tacticScore = pct(tacticDone, tacticTotal)
+  // List item completion (all linked lists combined)
+  const totalItems  = linkedLists.reduce((s, l) => s + l.items.length, 0)
+  const checkedItems = linkedLists.reduce((s, l) => s + l.items.filter(i => i.is_checked).length, 0)
+  const listScore   = pct(checkedItems, totalItems)
 
   // Weekly habit score
   let weekExp = 0, weekLog = 0
@@ -55,10 +51,10 @@ function calcScores(
   const overallHabitScore = pct(periodLog, periodExp)
 
   return {
-    weeklyScore:  avg([tacticScore, weekHabitScore]),
-    overallScore: avg([tacticScore, overallHabitScore]),
-    tacticDone,
-    tacticTotal,
+    weeklyScore:  avg([listScore, weekHabitScore]),
+    overallScore: avg([listScore, overallHabitScore]),
+    checkedItems,
+    totalItems,
   }
 }
 
@@ -73,28 +69,32 @@ const STATUS_INTENT: Record<string, BadgeIntent> = {
 
 export interface GoalCardProps {
   goal:             Goal
-  tactics:          Task[]
+  linkedLists:      ListWithItems[]
   linkedHabits:     Habit[]
   habitLogsByHabit: Map<string, Set<string>>
   allHabits:        Habit[]
+  allLists:         List[]
   today:            string
   weekDates:        string[]
   onDelete:         (goalId: string) => void
-  onToggleTactic:   (taskId: string, done: boolean) => Promise<void>
-  onAddTactic:      (goalId: string, title: string) => Promise<Task>
+  onLinkList:       (goalId: string, listId: string) => Promise<void>
+  onUnlinkList:     (goalId: string, listId: string) => Promise<void>
   onLinkHabit:      (goalId: string, habitId: string) => Promise<void>
   onUnlinkHabit:    (goalId: string, habitId: string) => Promise<void>
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+const JS_DAY_TO_KEY: Record<number, string> = {
+  0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat',
+}
+
 export default function GoalCard({
-  goal, tactics, linkedHabits, habitLogsByHabit,
-  allHabits, today, weekDates,
-  onDelete, onToggleTactic, onAddTactic, onLinkHabit, onUnlinkHabit,
+  goal, linkedLists, linkedHabits, habitLogsByHabit,
+  allHabits, allLists, today, weekDates,
+  onDelete, onLinkList, onUnlinkList, onLinkHabit, onUnlinkHabit,
 }: GoalCardProps) {
-  const [newTactic,       setNewTactic]       = useState('')
-  const [addingTactic,    setAddingTactic]     = useState(false)
+  const [showListPicker,  setShowListPicker]  = useState(false)
   const [showHabitPicker, setShowHabitPicker] = useState(false)
 
   const todayKey  = JS_DAY_TO_KEY[new Date().getDay()]
@@ -102,30 +102,14 @@ export default function GoalCard({
   const endDate   = goal.end_date   ?? addDays(startDate, 83)
   const weekNum   = weekOfTwelve(startDate, today)
 
-  const { weeklyScore, overallScore, tacticDone, tacticTotal } = calcScores(
-    tactics, linkedHabits, habitLogsByHabit, weekDates, startDate, endDate, today,
+  const { weeklyScore, overallScore, checkedItems, totalItems } = calcScores(
+    linkedLists, linkedHabits, habitLogsByHabit, weekDates, startDate, endDate, today,
   )
 
-  const linkedHabitIds  = new Set(linkedHabits.map(h => h.id))
-  const availableHabits = allHabits.filter(h => !linkedHabitIds.has(h.id))
-
-  async function handleAddTactic(e: React.FormEvent) {
-    e.preventDefault()
-    const trimmed = newTactic.trim()
-    if (!trimmed || addingTactic) return
-    setAddingTactic(true)
-    try {
-      await onAddTactic(goal.id, trimmed)
-      setNewTactic('')
-    } finally {
-      setAddingTactic(false)
-    }
-  }
-
-  const inputBase =
-    'h-7 px-2 w-full rounded-lg border-[0.5px] border-line bg-transparent ' +
-    'text-[12px] text-foreground placeholder:text-foreground-tertiary ' +
-    'focus:outline-none focus:border-goals transition-colors disabled:opacity-50'
+  const linkedListIds    = new Set(linkedLists.map(l => l.id))
+  const availableLists   = allLists.filter(l => !linkedListIds.has(l.id))
+  const linkedHabitIds   = new Set(linkedHabits.map(h => h.id))
+  const availableHabits  = allHabits.filter(h => !linkedHabitIds.has(h.id))
 
   return (
     <div className="group/card py-5 border-b-[0.5px] border-line-subtle last:border-b-0">
@@ -181,49 +165,88 @@ export default function GoalCard({
         </span>
       </div>
 
-      {/* ── Tactics ── */}
+      {/* ── Linked lists (tactic checklists) ── */}
       <div className="mb-4">
         <p className="text-[11px] text-foreground-tertiary mb-2">
-          {tacticTotal > 0
-            ? `Tactics · ${tacticDone}/${tacticTotal} done`
-            : 'Tactics'}
+          {totalItems > 0
+            ? `Checklists · ${checkedItems}/${totalItems} done`
+            : 'Checklists'}
         </p>
 
-        {tactics.length > 0 && (
-          <div className="flex flex-col gap-1 mb-2">
-            {tactics.map(task => (
-              <label key={task.id} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={task.status === 'done'}
-                  onChange={() => onToggleTactic(task.id, task.status === 'done')}
-                  className="w-[14px] h-[14px] rounded border-line accent-goals cursor-pointer flex-shrink-0"
-                />
-                <span className={cn(
-                  'text-[13px] leading-snug',
-                  task.status === 'done'
-                    ? 'text-foreground-tertiary line-through'
-                    : 'text-foreground',
-                )}>
-                  {task.title}
-                </span>
-              </label>
-            ))}
+        {linkedLists.length > 0 && (
+          <div className="flex flex-col gap-2 mb-2">
+            {linkedLists.map(list => {
+              const total   = list.items.length
+              const checked = list.items.filter(i => i.is_checked).length
+              const p       = total > 0 ? Math.round((checked / total) * 100) : 0
+              const accent  = `#${list.color}`
+              return (
+                <div
+                  key={list.id}
+                  className="group/list flex items-center gap-2"
+                >
+                  <span className="text-[13px]">{list.icon}</span>
+                  <span className="text-[12px] text-foreground flex-1 truncate">{list.title}</span>
+                  <span className="text-[11px] text-foreground-tertiary tabular-nums">
+                    {checked}/{total}
+                  </span>
+                  {total > 0 && (
+                    <div className="w-16 h-[5px] rounded-full bg-background-secondary overflow-hidden flex-shrink-0">
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${p}%`, backgroundColor: accent }}
+                      />
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => onUnlinkList(goal.id, list.id)}
+                    aria-label="Unlink list"
+                    className="opacity-0 group-hover/list:opacity-100 text-[14px] leading-none text-foreground-tertiary hover:text-foreground-secondary transition-opacity flex-shrink-0"
+                  >×</button>
+                </div>
+              )
+            })}
           </div>
         )}
 
-        <form onSubmit={handleAddTactic}>
-          <input
-            value={newTactic}
-            onChange={e => setNewTactic(e.target.value)}
-            placeholder="Add tactic…"
-            disabled={addingTactic}
-            className={inputBase}
-          />
-        </form>
+        {availableLists.length > 0 && !showListPicker && (
+          <button
+            type="button"
+            onClick={() => setShowListPicker(true)}
+            className="text-[12px] text-goals hover:opacity-75 transition-opacity"
+          >
+            + Link a list
+          </button>
+        )}
+
+        {showListPicker && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {availableLists.map(l => (
+              <button
+                key={l.id}
+                type="button"
+                onClick={async () => {
+                  await onLinkList(goal.id, l.id)
+                  setShowListPicker(false)
+                }}
+                className="h-7 px-3 text-[12px] rounded-lg bg-goals-subtle text-goals-on-subtle hover:opacity-80 transition-opacity"
+              >
+                {l.icon} {l.title}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setShowListPicker(false)}
+              className="h-7 px-3 text-[12px] rounded-lg bg-background-secondary text-foreground-secondary hover:opacity-80 transition-opacity"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* ── Lead indicators ── */}
+      {/* ── Lead indicators (habits) ── */}
       <div>
         <p className="text-[11px] text-foreground-tertiary mb-2">
           {linkedHabits.length > 0

@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 
 type Variant = 'primary' | 'secondary' | 'ghost'
-type Intent  = 'tasks' | 'habits' | 'goals' | 'finance' | 'neutral'
+type Intent  = 'lists' | 'habits' | 'goals' | 'finance' | 'neutral'
 type Size    = 'sm' | 'md'
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -11,7 +11,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const primaryClasses: Record<Intent, string> = {
-  tasks:   'bg-tasks   text-white',
+  lists:   'bg-lists   text-white',
   habits:  'bg-habits  text-white',
   goals:   'bg-goals   text-white',
   finance: 'bg-finance text-white',
@@ -19,7 +19,7 @@ const primaryClasses: Record<Intent, string> = {
 }
 
 const secondaryClasses: Record<Intent, string> = {
-  tasks:   'bg-tasks-subtle   text-tasks-on-subtle',
+  lists:   'bg-lists-subtle   text-lists-on-subtle',
   habits:  'bg-habits-subtle  text-habits-on-subtle',
   goals:   'bg-goals-subtle   text-goals-on-subtle',
   finance: 'bg-finance-subtle text-finance-on-subtle',
@@ -27,7 +27,7 @@ const secondaryClasses: Record<Intent, string> = {
 }
 
 const ghostClasses: Record<Intent, string> = {
-  tasks:   'text-tasks   hover:bg-tasks-subtle',
+  lists:   'text-lists   hover:bg-lists-subtle',
   habits:  'text-habits  hover:bg-habits-subtle',
   goals:   'text-goals   hover:bg-goals-subtle',
   finance: 'text-finance hover:bg-finance-subtle',

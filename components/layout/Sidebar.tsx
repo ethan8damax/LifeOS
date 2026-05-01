@@ -21,14 +21,15 @@ function IconGrid() {
   )
 }
 
-function IconTasks() {
+function IconLists() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
       stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="2,4.5 4,6.5 7,3"/>
-      <line x1="10" y1="4.5" x2="14" y2="4.5"/>
-      <line x1="2"  y1="9"   x2="14" y2="9"/>
-      <line x1="2"  y1="13"  x2="11" y2="13"/>
+      <rect x="2" y="2" width="4" height="4" rx="1"/>
+      <rect x="2" y="10" width="4" height="4" rx="1"/>
+      <line x1="9" y1="4" x2="14" y2="4"/>
+      <line x1="9" y1="12" x2="14" y2="12"/>
+      <line x1="9" y1="7"  x2="14" y2="7"/>
     </svg>
   )
 }
@@ -120,11 +121,11 @@ function IconSignOut() {
 
 // ── Nav config ────────────────────────────────────────────────────────────────
 
-type Intent = 'neutral' | 'tasks' | 'habits' | 'goals' | 'finance'
+type Intent = 'neutral' | 'lists' | 'habits' | 'goals' | 'finance'
 
 const NAV = [
   { href: '/',        label: 'Dashboard', intent: 'neutral'  as Intent, icon: <IconGrid />    },
-  { href: '/tasks',   label: 'Tasks',     intent: 'tasks'    as Intent, icon: <IconTasks />   },
+  { href: '/lists',   label: 'Lists',     intent: 'lists'    as Intent, icon: <IconLists />   },
   { href: '/habits',  label: 'Habits',    intent: 'habits'   as Intent, icon: <IconHabits />  },
   { href: '/goals',   label: 'Goals',     intent: 'goals'    as Intent, icon: <IconGoals />   },
   { href: '/finance', label: 'Finance',   intent: 'finance'  as Intent, icon: <IconFinance /> },
@@ -132,7 +133,7 @@ const NAV = [
 
 const ACTIVE: Record<Intent, string> = {
   neutral: 'bg-background       text-foreground',
-  tasks:   'bg-tasks-subtle     text-tasks',
+  lists:   'bg-lists-subtle     text-lists',
   habits:  'bg-habits-subtle    text-habits',
   goals:   'bg-goals-subtle     text-goals',
   finance: 'bg-finance-subtle   text-finance',

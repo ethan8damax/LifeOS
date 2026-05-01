@@ -5,11 +5,10 @@ import {
   getGoals, createGoal, deleteGoal,
   getGoalHabitsWithHabits, linkHabitToGoal, unlinkHabitFromGoal,
 } from '@/lib/queries/goals'
-import { createTask, updateTask, getTasksByGoalIds } from '@/lib/queries/tasks'
-import { getHabits }                                 from '@/lib/queries/habits'
-import { getHabitLogsForWeek }                       from '@/lib/queries/habits'
-import { todayStr, getWeekDates }                     from '@/lib/utils'
-import type { Goal, Habit, Task, GoalHabitWithHabit } from '@/types'
+import { getHabits, getHabitLogsForWeek } from '@/lib/queries/habits'
+import { getLists, getAllListItems, getListsForGoals, linkListToGoal, unlinkListFromGoal } from '@/lib/queries/lists'
+import { todayStr, getWeekDates }         from '@/lib/utils'
+import type { Goal, Habit, List, ListItem, ListWithItems, GoalHabitWithHabit } from '@/types'
 import MetricCard from '@/components/ui/MetricCard'
 import Card       from '@/components/ui/Card'
 import Button     from '@/components/ui/Button'
@@ -20,19 +19,21 @@ import GoalCard   from '@/components/goals/GoalCard'
 type StatusFilter = 'all' | 'active' | 'paused' | 'done'
 
 export default function GoalsPage() {
-  const [goals,      setGoals]      = useState<Goal[]>([])
-  const [tactics,    setTactics]    = useState<Task[]>([])
-  const [goalHabits, setGoalHabits] = useState<GoalHabitWithHabit[]>([])
-  const [allHabits,  setAllHabits]  = useState<Habit[]>([])
-  const [logMap,     setLogMap]     = useState<Map<string, Set<string>>>(new Map())
-  const [loading,    setLoading]    = useState(true)
-  const [error,      setError]      = useState<string | null>(null)
+  const [goals,        setGoals]        = useState<Goal[]>([])
+  const [goalHabits,   setGoalHabits]   = useState<GoalHabitWithHabit[]>([])
+  const [allHabits,    setAllHabits]    = useState<Habit[]>([])
+  const [logMap,       setLogMap]       = useState<Map<string, Set<string>>>(new Map())
+  const [allLists,     setAllLists]     = useState<List[]>([])
+  const [allItems,     setAllItems]     = useState<ListItem[]>([])
+  // goalId → ListWithItems[]
+  const [goalListMap,  setGoalListMap]  = useState<Map<string, ListWithItems[]>>(new Map())
+  const [loading,      setLoading]      = useState(true)
+  const [error,        setError]        = useState<string | null>(null)
 
   // Add-goal form
-  const [newTitle,   setNewTitle]   = useState('')
-  const [newVision,  setNewVision]  = useState('')
-  const [newTactics, setNewTactics] = useState<string[]>([''])
-  const [adding,     setAdding]     = useState(false)
+  const [newTitle,  setNewTitle]  = useState('')
+  const [newVision, setNewVision] = useState('')
+  const [adding,    setAdding]    = useState(false)
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active')
 
@@ -44,20 +45,41 @@ export default function GoalsPage() {
   const load = useCallback(async () => {
     setError(null)
     try {
-      const [allGoals, habits] = await Promise.all([getGoals(), getHabits()])
+      const [allGoals, habits, lists, items] = await Promise.all([
+        getGoals(),
+        getHabits(),
+        getLists(),
+        getAllListItems(),
+      ])
       setGoals(allGoals)
       setAllHabits(habits)
+      setAllLists(lists)
+      setAllItems(items)
 
       const goalIds = allGoals.map(g => g.id)
 
-      const [taskRows, ghRows] = await Promise.all([
-        getTasksByGoalIds(goalIds),
+      const [ghRows, goalListRows] = await Promise.all([
         getGoalHabitsWithHabits(goalIds),
+        getListsForGoals(goalIds),
       ])
-      setTactics(taskRows)
       setGoalHabits(ghRows)
 
-      // Load habit logs for the full span of all goals so scores are accurate
+      // Build goalId → ListWithItems[] map, enriching with items from allItems
+      const itemsByList: Record<string, ListItem[]> = {}
+      for (const item of items) {
+        if (!item.list_id) continue
+        if (!itemsByList[item.list_id]) itemsByList[item.list_id] = []
+        itemsByList[item.list_id].push(item)
+      }
+      const glMap = new Map<string, ListWithItems[]>()
+      for (const { goal_id, list } of goalListRows) {
+        if (!glMap.has(goal_id)) glMap.set(goal_id, [])
+        const withItems: ListWithItems = { ...list, items: itemsByList[list.id] ?? list.items }
+        glMap.get(goal_id)!.push(withItems)
+      }
+      setGoalListMap(glMap)
+
+      // Load habit logs for the full span of all goals
       const linkedHabitIds = Array.from(new Set(ghRows.map(gh => gh.habit_id)))
       if (linkedHabitIds.length > 0 && allGoals.length > 0) {
         const minStart = allGoals.reduce((min, g) => {
@@ -99,20 +121,8 @@ export default function GoalsPage() {
         status: 'active',
       })
       setGoals(prev => [created, ...prev])
-
-      const tacticTitles = newTactics.filter(t => t.trim())
-      if (tacticTitles.length > 0) {
-        const createdTactics = await Promise.all(
-          tacticTitles.map(title =>
-            createTask({ title, goal_id: created.id, status: 'todo', is_recurring: true })
-          )
-        )
-        setTactics(prev => [...prev, ...createdTactics])
-      }
-
       setNewTitle('')
       setNewVision('')
-      setNewTactics([''])
     } catch (e) {
       setError((e as { message?: string })?.message ?? 'Failed to add goal.')
     } finally {
@@ -120,12 +130,12 @@ export default function GoalsPage() {
     }
   }
 
-  // ── Goal-level mutations ──────────────────────────────────────────────────────
+  // ── Goal mutations ────────────────────────────────────────────────────────────
 
   async function handleDeleteGoal(goalId: string) {
     setGoals(prev => prev.filter(g => g.id !== goalId))
-    setTactics(prev => prev.filter(t => t.goal_id !== goalId))
     setGoalHabits(prev => prev.filter(gh => gh.goal_id !== goalId))
+    setGoalListMap(prev => { const next = new Map(prev); next.delete(goalId); return next })
     try {
       await deleteGoal(goalId)
     } catch {
@@ -133,22 +143,38 @@ export default function GoalsPage() {
     }
   }
 
-  // ── Tactic mutations ──────────────────────────────────────────────────────────
+  // ── List linking ──────────────────────────────────────────────────────────────
 
-  async function handleToggleTactic(taskId: string, done: boolean) {
-    const next = done ? 'done' : 'todo'
-    setTactics(prev => prev.map(t => t.id === taskId ? { ...t, status: next } : t))
+  async function handleLinkList(goalId: string, listId: string) {
+    const list = allLists.find(l => l.id === listId)
+    if (!list) return
+    const itemsByList: Record<string, ListItem[]> = {}
+    for (const item of allItems) {
+      if (!item.list_id) continue
+      if (!itemsByList[item.list_id]) itemsByList[item.list_id] = []
+      itemsByList[item.list_id].push(item)
+    }
+    const withItems: ListWithItems = { ...list, items: itemsByList[listId] ?? [] }
+    setGoalListMap(prev => {
+      const next = new Map(prev)
+      const existing = next.get(goalId) ?? []
+      next.set(goalId, [...existing, withItems])
+      return next
+    })
+    await linkListToGoal(goalId, listId)
+  }
+
+  async function handleUnlinkList(goalId: string, listId: string) {
+    setGoalListMap(prev => {
+      const next = new Map(prev)
+      next.set(goalId, (next.get(goalId) ?? []).filter(l => l.id !== listId))
+      return next
+    })
     try {
-      await updateTask(taskId, { status: next })
+      await unlinkListFromGoal(goalId, listId)
     } catch {
       load()
     }
-  }
-
-  async function handleAddTactic(goalId: string, title: string): Promise<Task> {
-    const created = await createTask({ title, goal_id: goalId, status: 'todo', is_recurring: true })
-    setTactics(prev => [...prev, created])
-    return created
   }
 
   // ── Habit linking ─────────────────────────────────────────────────────────────
@@ -158,7 +184,6 @@ export default function GoalsPage() {
     const habit = allHabits.find(h => h.id === habitId)
     if (!habit) return
     setGoalHabits(prev => [...prev, { goal_id: goalId, habit_id: habitId, habit }])
-    // Load logs for newly linked habit if not already present
     if (!logMap.has(habitId)) {
       const goal = goals.find(g => g.id === goalId)
       if (goal) {
@@ -184,34 +209,8 @@ export default function GoalsPage() {
     }
   }
 
-  // ── Tactic input helpers ──────────────────────────────────────────────────────
-
-  function setTacticAt(i: number, val: string) {
-    setNewTactics(prev => prev.map((t, idx) => idx === i ? val : t))
-  }
-
-  function addTacticRow() {
-    setNewTactics(prev => [...prev, ''])
-  }
-
-  function removeTacticRow(i: number) {
-    setNewTactics(prev => prev.length > 1 ? prev.filter((_, idx) => idx !== i) : [''])
-  }
-
   // ── Derived state ─────────────────────────────────────────────────────────────
 
-  // Index: goalId → tactics[]
-  const tacticsByGoal = useMemo(() => {
-    const map = new Map<string, Task[]>()
-    for (const t of tactics) {
-      if (!t.goal_id) continue
-      if (!map.has(t.goal_id)) map.set(t.goal_id, [])
-      map.get(t.goal_id)!.push(t)
-    }
-    return map
-  }, [tactics])
-
-  // Index: goalId → Habit[]
   const habitsByGoal = useMemo(() => {
     const map = new Map<string, Habit[]>()
     for (const gh of goalHabits) {
@@ -268,7 +267,6 @@ export default function GoalsPage() {
 
       {/* ── Add goal form ── */}
       <form onSubmit={handleAdd} className="flex flex-col gap-2 mb-5">
-        {/* Row 1: title + submit */}
         <div className="flex gap-2">
           <input
             value={newTitle}
@@ -288,48 +286,14 @@ export default function GoalsPage() {
           </Button>
         </div>
 
-        {/* Row 2: vision (shown when title has content) */}
         {newTitle.trim() && (
-          <>
-            <input
-              value={newVision}
-              onChange={e => setNewVision(e.target.value)}
-              placeholder="Vision — why does this goal matter?"
-              className={inputBase}
-              autoComplete="off"
-            />
-
-            {/* Tactics */}
-            <div className="flex flex-col gap-1">
-              <p className="text-[11px] text-foreground-tertiary px-1">Tactics (weekly actions)</p>
-              {newTactics.map((tactic, i) => (
-                <div key={i} className="flex gap-2">
-                  <input
-                    value={tactic}
-                    onChange={e => setTacticAt(i, e.target.value)}
-                    placeholder={`Tactic ${i + 1}…`}
-                    className={`flex-1 ${inputBase}`}
-                    autoComplete="off"
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') { e.preventDefault(); addTacticRow() }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeTacticRow(i)}
-                    className="w-8 h-8 rounded-lg text-foreground-tertiary hover:text-foreground hover:bg-background-secondary transition-colors text-[16px]"
-                  >×</button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={addTacticRow}
-                className="self-start text-[12px] text-goals hover:opacity-75 transition-opacity px-1"
-              >
-                + Add tactic
-              </button>
-            </div>
-          </>
+          <input
+            value={newVision}
+            onChange={e => setNewVision(e.target.value)}
+            placeholder="Vision — why does this goal matter?"
+            className={inputBase}
+            autoComplete="off"
+          />
         )}
       </form>
 
@@ -365,15 +329,16 @@ export default function GoalsPage() {
               <GoalCard
                 key={goal.id}
                 goal={goal}
-                tactics={tacticsByGoal.get(goal.id) ?? []}
+                linkedLists={goalListMap.get(goal.id) ?? []}
                 linkedHabits={habitsByGoal.get(goal.id) ?? []}
                 habitLogsByHabit={logMap}
                 allHabits={allHabits}
+                allLists={allLists}
                 today={today}
                 weekDates={weekDates}
                 onDelete={handleDeleteGoal}
-                onToggleTactic={handleToggleTactic}
-                onAddTactic={handleAddTactic}
+                onLinkList={handleLinkList}
+                onUnlinkList={handleUnlinkList}
                 onLinkHabit={handleLinkHabit}
                 onUnlinkHabit={handleUnlinkHabit}
               />

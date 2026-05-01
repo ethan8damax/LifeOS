@@ -87,10 +87,10 @@
   --color-finance-subtle:    var(--amber-50);
   --color-finance-on-subtle: var(--amber-800);
 
-  /* Tasks (blue) */
-  --color-tasks:           var(--blue-500);
-  --color-tasks-subtle:    var(--blue-50);
-  --color-tasks-on-subtle: var(--blue-800);
+  /* Lists (blue) */
+  --color-lists:           var(--blue-500);
+  --color-lists-subtle:    var(--blue-50);
+  --color-lists-on-subtle: var(--blue-800);
 
   /* ─────────────────────────────────────────
      Semantic surface / text / border tokens

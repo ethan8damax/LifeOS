@@ -41,10 +41,10 @@ const config: Config = {
           subtle:     'var(--color-finance-subtle)',
           'on-subtle':'var(--color-finance-on-subtle)',
         },
-        tasks: {
-          DEFAULT:    'var(--color-tasks)',
-          subtle:     'var(--color-tasks-subtle)',
-          'on-subtle':'var(--color-tasks-on-subtle)',
+        lists: {
+          DEFAULT:    'var(--color-lists)',
+          subtle:     'var(--color-lists-subtle)',
+          'on-subtle':'var(--color-lists-on-subtle)',
         },
       },
     },

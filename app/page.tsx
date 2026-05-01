@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { getTasks, updateTask, deleteTask }              from '@/lib/queries/tasks'
+import { getLists, getAllListItems }                  from '@/lib/queries/lists'
 import { getGoals, deleteGoal, getGoalHabitsWithHabits } from '@/lib/queries/goals'
 import { getHabits, getHabitLogsForWeek }                from '@/lib/queries/habits'
 import { getIncomeSources, getBudgetCategories }          from '@/lib/queries/finance'
@@ -9,10 +9,9 @@ import {
   todayStr, getWeekDates, pad,
   weekOfTwelve, countHabitDaysInDates,
 } from '@/lib/utils'
-import type { Task, Goal, Habit, IncomeSource, BudgetCategory, GoalHabitWithHabit } from '@/types'
+import type { List, ListItem, Goal, Habit, IncomeSource, BudgetCategory, GoalHabitWithHabit } from '@/types'
 import MetricCard   from '@/components/ui/MetricCard'
 import Card         from '@/components/ui/Card'
-import TaskList     from '@/components/tasks/TaskList'
 import GoalProgress from '@/components/goals/GoalProgress'
 import HabitDots    from '@/components/habits/HabitDots'
 import BudgetRow    from '@/components/finance/BudgetRow'
@@ -49,39 +48,30 @@ function formatMonth(m: string): string {
   return new Date(y, mo - 1, 1).toLocaleDateString('en-US', { month: 'long' })
 }
 
-// Compute a weekly execution score (0–100) for the focus goal.
-// = average of tactic completion rate and linked-habit completion rate for this week.
 function calcWeeklyExecution(
-  tactics:      Task[],
   linkedHabits: Habit[],
   logsByHabit:  Map<string, Set<string>>,
   weekDates:    string[],
 ): number | null {
-  const parts: number[] = []
-
-  if (tactics.length > 0)
-    parts.push(tactics.filter(t => t.status === 'done').length / tactics.length * 100)
-
   let weekExp = 0, weekLog = 0
   for (const h of linkedHabits) {
     weekExp += countHabitDaysInDates(h.days, weekDates)
     weekLog += weekDates.filter(d => logsByHabit.get(h.id)?.has(d)).length
   }
-  if (weekExp > 0) parts.push(weekLog / weekExp * 100)
-
-  return parts.length > 0 ? Math.round(parts.reduce((a, b) => a + b) / parts.length) : null
+  return weekExp > 0 ? Math.round(weekLog / weekExp * 100) : null
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const [tasks,        setTasks]        = useState<Task[]>([])
+  const [lists,        setLists]        = useState<List[]>([])
+  const [allItems,     setAllItems]     = useState<ListItem[]>([])
   const [goals,        setGoals]        = useState<Goal[]>([])
   const [habits,       setHabits]       = useState<Habit[]>([])
   const [logsByHabit,  setLogsByHabit]  = useState<Map<string, Set<string>>>(new Map())
   const [goalHabits,   setGoalHabits]   = useState<GoalHabitWithHabit[]>([])
-  const [incomes,     setIncomes]     = useState<IncomeSource[]>([])
-  const [budgets,     setBudgets]     = useState<BudgetCategory[]>([])
+  const [incomes,      setIncomes]      = useState<IncomeSource[]>([])
+  const [budgets,      setBudgets]      = useState<BudgetCategory[]>([])
   const [loading,      setLoading]      = useState(true)
   const [error,        setError]        = useState<string | null>(null)
   const [greeting,     setGreeting]     = useState('')
@@ -103,20 +93,21 @@ export default function DashboardPage() {
     setLoading(true)
     setError(null)
     try {
-      const [allTasks, allGoals, allHabits, inc, cats] = await Promise.all([
-        getTasks(),
+      const [allLists, items, allGoals, allHabits, inc, cats] = await Promise.all([
+        getLists(),
+        getAllListItems(),
         getGoals({ status: 'active' }),
         getHabits(),
         getIncomeSources(currentMonth),
         getBudgetCategories(currentMonth),
       ])
-      setTasks(allTasks)
+      setLists(allLists)
+      setAllItems(items)
       setGoals(allGoals)
       setHabits(allHabits)
       setIncomes(inc)
       setBudgets(cats)
 
-      // Load habit logs (this week) and goal→habit links in parallel
       const goalIds = allGoals.map(g => g.id)
       const [logs, ghRows] = await Promise.all([
         allHabits.length > 0
@@ -146,25 +137,6 @@ export default function DashboardPage() {
 
   // ── Mutations ───────────────────────────────────────────────────────────────
 
-  async function handleToggle(id: string, done: boolean) {
-    const next = done ? 'done' : 'todo'
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: next } : t))
-    try {
-      await updateTask(id, { status: next })
-    } catch {
-      load()
-    }
-  }
-
-  async function handleTaskDelete(id: string) {
-    setTasks(prev => prev.filter(t => t.id !== id))
-    try {
-      await deleteTask(id)
-    } catch {
-      load()
-    }
-  }
-
   async function handleGoalDelete(id: string) {
     setGoals(prev => prev.filter(g => g.id !== id))
     try {
@@ -175,18 +147,6 @@ export default function DashboardPage() {
   }
 
   // ── Derived state ───────────────────────────────────────────────────────────
-
-  const todayTasks = useMemo(() =>
-    tasks
-      .filter(t => t.status !== 'done' && (t.due_date === null || t.due_date <= today))
-      .slice(0, 8),
-    [tasks, today],
-  )
-
-  const overdueCount = useMemo(() =>
-    tasks.filter(t => t.status !== 'done' && t.due_date !== null && t.due_date < today).length,
-    [tasks, today],
-  )
 
   const habitsToday = useMemo(() =>
     habits.filter(h => !h.days || h.days.includes(todayKey)),
@@ -216,11 +176,6 @@ export default function DashboardPage() {
 
   const focusGoal = goals[0] ?? null
 
-  // Focus goal execution score (this week)
-  const focusGoalTactics = useMemo(() =>
-    focusGoal ? tasks.filter(t => t.goal_id === focusGoal.id) : [],
-    [tasks, focusGoal],
-  )
   const focusGoalHabits = useMemo(() =>
     focusGoal
       ? goalHabits.filter(gh => gh.goal_id === focusGoal.id).map(gh => gh.habit)
@@ -228,10 +183,8 @@ export default function DashboardPage() {
     [goalHabits, focusGoal],
   )
   const focusExecution = useMemo(() =>
-    focusGoal
-      ? calcWeeklyExecution(focusGoalTactics, focusGoalHabits, logsByHabit, weekDates)
-      : null,
-    [focusGoal, focusGoalTactics, focusGoalHabits, logsByHabit, weekDates],
+    focusGoal ? calcWeeklyExecution(focusGoalHabits, logsByHabit, weekDates) : null,
+    [focusGoal, focusGoalHabits, logsByHabit, weekDates],
   )
 
   function buildDots(habitId: string, habitDays: string[] | null): DotState[] {
@@ -246,6 +199,25 @@ export default function DashboardPage() {
       return { date, kind }
     })
   }
+
+  // Pinned lists (or 3 most recent)
+  const dashLists = useMemo(() => {
+    const pinned = lists.filter(l => l.is_pinned)
+    return pinned.length > 0 ? pinned : lists.slice(0, 3)
+  }, [lists])
+
+  const itemsByList = useMemo(() => {
+    const map: Record<string, ListItem[]> = {}
+    for (const item of allItems) {
+      if (!item.list_id) continue
+      if (!map[item.list_id]) map[item.list_id] = []
+      map[item.list_id].push(item)
+    }
+    return map
+  }, [allItems])
+
+  const totalListItems = useMemo(() => allItems.length, [allItems])
+  const checkedItems   = useMemo(() => allItems.filter(i => i.is_checked).length, [allItems])
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -285,7 +257,6 @@ export default function DashboardPage() {
           <p className="text-[14px] font-medium text-goals-on-subtle mb-3">
             {focusGoal.title}
           </p>
-          {/* 12-week timeline */}
           <div className="flex items-center gap-[3px]">
             {Array.from({ length: 12 }, (_, i) => (
               <div
@@ -300,9 +271,9 @@ export default function DashboardPage() {
       {/* Metric cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-[10px] mb-6">
         <MetricCard
-          label="Tasks today"
-          value={loading ? '—' : todayTasks.length}
-          sub={overdueCount > 0 ? `${overdueCount} overdue` : undefined}
+          label="Items done"
+          value={loading ? '—' : checkedItems}
+          valueSub={!loading && totalListItems > 0 ? `/ ${totalListItems}` : undefined}
         />
         <MetricCard
           label="Habits today"
@@ -319,18 +290,43 @@ export default function DashboardPage() {
       {/* 2-column content grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-        {/* Left column: tasks + goals */}
+        {/* Left column: lists + goals */}
         <div className="flex flex-col gap-4">
 
-          <Card title="Today's tasks">
+          <Card title="Lists">
             {loading ? (
               <p className="text-[13px] text-foreground-tertiary py-1">Loading…</p>
+            ) : dashLists.length === 0 ? (
+              <p className="text-[13px] text-foreground-tertiary py-1">No lists yet.</p>
             ) : (
-              <TaskList
-                tasks={todayTasks}
-                onToggle={handleToggle}
-                onDelete={handleTaskDelete}
-              />
+              <div className="flex flex-col gap-3">
+                {dashLists.map(list => {
+                  const items   = itemsByList[list.id] ?? []
+                  const total   = items.length
+                  const checked = items.filter(i => i.is_checked).length
+                  const pct     = total > 0 ? Math.round((checked / total) * 100) : 0
+                  const accent  = `#${list.color}`
+                  return (
+                    <div key={list.id}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[14px]">{list.icon}</span>
+                        <span className="text-[13px] text-foreground flex-1 truncate">{list.title}</span>
+                        <span className="text-[11px] text-foreground-tertiary flex-shrink-0 tabular-nums">
+                          {checked}/{total}
+                        </span>
+                      </div>
+                      {total > 0 && (
+                        <div className="h-[6px] rounded-full bg-background-secondary overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-300"
+                            style={{ width: `${pct}%`, backgroundColor: accent }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             )}
           </Card>
 
