@@ -125,6 +125,7 @@ export default function FinancePage() {
   const [assets,      setAssets]      = useState<Asset[]>([])
   const [snapshots,   setSnapshots]   = useState<NetWorthSnapshot[]>([])
   const [loading,     setLoading]     = useState(true)
+  const [loadError,   setLoadError]   = useState<string | null>(null)
   const [savingSnap,  setSavingSnap]  = useState(false)
   const [owners,      setOwners]      = useState<string[]>([])
 
@@ -132,6 +133,7 @@ export default function FinancePage() {
 
   const load = useCallback(async () => {
     setLoading(true)
+    setLoadError(null)
     try {
       const [cats, inc, rec, dbt, spods, ast, snaps, memberNames] = await Promise.all([
         getBudgetCategories(month),
@@ -151,6 +153,8 @@ export default function FinancePage() {
       setAssets(ast)
       setSnapshots(snaps)
       setOwners(memberNames)
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Failed to load finance data')
     } finally {
       setLoading(false)
     }
@@ -217,7 +221,9 @@ export default function FinancePage() {
         ))}
       </div>
 
-      {loading ? (
+      {loadError ? (
+        <p className="text-[13px] text-finance">{loadError}</p>
+      ) : loading ? (
         <p className="text-[13px] text-foreground-tertiary">Loading…</p>
       ) : (
         <>
