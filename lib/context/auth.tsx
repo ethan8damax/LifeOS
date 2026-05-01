@@ -117,7 +117,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
+    // Redirect away from public auth pages once signed in
     if (user && householdId && isPublic) {
+      router.replace('/')
+      return
+    }
+
+    // Redirect away from onboarding if household is already set
+    // (handles "Go to dashboard" race and direct URL access)
+    if (user && householdId && isOnboarding) {
       router.replace('/')
       return
     }
