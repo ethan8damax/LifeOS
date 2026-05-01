@@ -1,7 +1,6 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 
@@ -24,7 +23,6 @@ const AuthContext = createContext<AuthContextValue>({
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
   const [user,        setUser]        = useState<User | null>(null)
   const [displayName, setDisplayName] = useState<string | null>(null)
   const [householdId, setHouseholdId] = useState<string | null>(null)
@@ -98,8 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const supabase = createClient()
     const { error } = await supabase.auth.signOut()
     if (error) console.error('Sign out error:', error)
-    // Hard-navigate to ensure all client state is cleared
-    router.push('/login')
+    window.location.href = '/login'
   }
 
   return (
