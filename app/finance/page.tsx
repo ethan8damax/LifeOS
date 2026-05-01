@@ -10,6 +10,7 @@ import {
   getAssets, createAsset, updateAsset, deleteAsset,
   getNetWorthSnapshots, createNetWorthSnapshot,
 } from '@/lib/queries/finance'
+import { getHouseholdMemberNames } from '@/lib/queries/households'
 import { pad } from '@/lib/utils'
 import type {
   BudgetCategory, IncomeSource, RecurringPayment,
@@ -62,7 +63,6 @@ const DEFAULT_CATEGORIES = [
   'Coffee', 'Fun money', 'Recurring payments', 'Contribution', 'Hosting',
 ]
 
-const OWNERS = ['Ethan', 'Caroline']
 
 // ── Net worth sparkline chart ─────────────────────────────────────────────────
 
@@ -126,13 +126,14 @@ export default function FinancePage() {
   const [snapshots,   setSnapshots]   = useState<NetWorthSnapshot[]>([])
   const [loading,     setLoading]     = useState(true)
   const [savingSnap,  setSavingSnap]  = useState(false)
+  const [owners,      setOwners]      = useState<string[]>([])
 
   // ── Data loading ─────────────────────────────────────────────────────────────
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [cats, inc, rec, dbt, spods, ast, snaps] = await Promise.all([
+      const [cats, inc, rec, dbt, spods, ast, snaps, memberNames] = await Promise.all([
         getBudgetCategories(month),
         getIncomeSources(month),
         getRecurringPayments(),
@@ -140,6 +141,7 @@ export default function FinancePage() {
         getSavingsPods(),
         getAssets(),
         getNetWorthSnapshots(),
+        getHouseholdMemberNames(),
       ])
       setCategories(cats)
       setIncomes(inc)
@@ -148,6 +150,7 @@ export default function FinancePage() {
       setPods(spods)
       setAssets(ast)
       setSnapshots(snaps)
+      setOwners(memberNames)
     } finally {
       setLoading(false)
     }
@@ -219,10 +222,10 @@ export default function FinancePage() {
       ) : (
         <>
           {tab === 'budget'    && <BudgetTab    month={month} setMonth={setMonth} categories={categories} setCategories={setCategories} leftover={leftover} totalExpectedIncome={totalExpectedIncome} totalBudgeted={totalBudgeted} recurringTotal={recurringTotal} />}
-          {tab === 'income'    && <IncomeTab    month={month} setMonth={setMonth} incomes={incomes} setIncomes={setIncomes} />}
+          {tab === 'income'    && <IncomeTab    month={month} setMonth={setMonth} incomes={incomes} setIncomes={setIncomes} owners={owners} />}
           {tab === 'recurring' && <RecurringTab recurrings={recurrings} setRecurrings={setRecurrings} recurringTotal={recurringTotal} />}
           {tab === 'savings'   && <SavingsTab   pods={pods} setPods={setPods} totalAllotted={totalAllotted} totalPodGoal={totalPodGoal} savingsBalance={assets.filter(a => a.type === 'savings').reduce((s, a) => s + a.balance, 0)} />}
-          {tab === 'networth'  && <NetWorthTab  assets={assets} setAssets={setAssets} debts={debts} setDebts={setDebts} recurrings={recurrings} setRecurrings={setRecurrings} snapshots={snapshots} setSnapshots={setSnapshots} totalAssets={totalAssets} totalDebt={totalDebt} netWorth={netWorth} month={month} savingSnap={savingSnap} setSavingSnap={setSavingSnap} />}
+          {tab === 'networth'  && <NetWorthTab  assets={assets} setAssets={setAssets} debts={debts} setDebts={setDebts} recurrings={recurrings} setRecurrings={setRecurrings} snapshots={snapshots} setSnapshots={setSnapshots} totalAssets={totalAssets} totalDebt={totalDebt} netWorth={netWorth} month={month} savingSnap={savingSnap} setSavingSnap={setSavingSnap} owners={owners} />}
         </>
       )}
     </div>
@@ -485,14 +488,18 @@ function BudgetCategoryRow({
 // ── Income tab ────────────────────────────────────────────────────────────────
 
 function IncomeTab({
-  month, setMonth, incomes, setIncomes,
+  month, setMonth, incomes, setIncomes, owners,
 }: {
   month: string
   setMonth: (m: string) => void
   incomes: IncomeSource[]
   setIncomes: React.Dispatch<React.SetStateAction<IncomeSource[]>>
+  owners: string[]
 }) {
-  const [newOwner, setNewOwner] = useState<string>(OWNERS[0])
+  const [newOwner, setNewOwner] = useState<string>('')
+  useEffect(() => {
+    if (owners.length > 0 && !newOwner) setNewOwner(owners[0])
+  }, [owners, newOwner])
   const [newName,  setNewName]  = useState('')
   const [adding,   setAdding]   = useState(false)
 
@@ -535,7 +542,7 @@ function IncomeTab({
 
       {/* Per-owner sections */}
       <div className="flex flex-col gap-4 mb-4">
-        {OWNERS.map(owner => {
+        {owners.map(owner => {
           const ownerIncomes = incomes.filter(i => i.owner === owner)
           const ownerExpected = ownerIncomes.reduce((s, i) => s + i.expected, 0)
           const ownerActual   = ownerIncomes.reduce((s, i) => s + i.actual, 0)
@@ -605,7 +612,7 @@ function IncomeTab({
             onChange={e => setNewOwner(e.target.value)}
             className={`w-[96px] ${inputCls}`}
           >
-            {OWNERS.map(o => <option key={o} value={o}>{o}</option>)}
+            {owners.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
           <input
             value={newName}
@@ -973,7 +980,7 @@ function SavingsPodRow({
 
 function NetWorthTab({
   assets, setAssets, debts, setDebts, recurrings, setRecurrings,
-  snapshots, setSnapshots, totalAssets, totalDebt, netWorth, month, savingSnap, setSavingSnap,
+  snapshots, setSnapshots, totalAssets, totalDebt, netWorth, month, savingSnap, setSavingSnap, owners,
 }: {
   assets: Asset[]
   setAssets: React.Dispatch<React.SetStateAction<Asset[]>>
@@ -989,13 +996,17 @@ function NetWorthTab({
   month: string
   savingSnap: boolean
   setSavingSnap: (v: boolean) => void
+  owners: string[]
 }) {
   const [newAssetName, setNewAssetName] = useState('')
   const [newAssetRef,  setNewAssetRef]  = useState('')
   const [newAssetType, setNewAssetType] = useState('checking')
   const [addingAsset,  setAddingAsset]  = useState(false)
 
-  const [newDebtOwner, setNewDebtOwner] = useState<string>(OWNERS[0])
+  const [newDebtOwner, setNewDebtOwner] = useState<string>('')
+  useEffect(() => {
+    if (owners.length > 0 && !newDebtOwner) setNewDebtOwner(owners[0])
+  }, [owners, newDebtOwner])
   const [newDebtName,  setNewDebtName]  = useState('')
   const [addingDebt,   setAddingDebt]   = useState(false)
 
@@ -1181,7 +1192,7 @@ function NetWorthTab({
           <p className="text-[13px] text-foreground-tertiary py-2">No debts tracked.</p>
         ) : (
           <div>
-            {OWNERS.map(owner => {
+            {owners.map(owner => {
               const ownerDebts = debts.filter(d => d.owner === owner)
               if (ownerDebts.length === 0) return null
               return (
@@ -1226,7 +1237,7 @@ function NetWorthTab({
             onChange={e => setNewDebtOwner(e.target.value)}
             className={`w-[96px] ${inputCls}`}
           >
-            {OWNERS.map(o => <option key={o} value={o}>{o}</option>)}
+            {owners.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
           <input
             value={newDebtName}

@@ -58,6 +58,20 @@ export async function addMemberToHousehold(
 }
 
 /**
+ * Get all display names for members of the current user's household.
+ * RLS filters automatically to the current household.
+ */
+export async function getHouseholdMemberNames(): Promise<string[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('household_members')
+    .select('display_name')
+    .order('display_name', { ascending: true })
+  if (error) throw error
+  return (data ?? []).map(m => m.display_name ?? 'User')
+}
+
+/**
  * Get the household membership for a user. Returns null if the user has no household.
  */
 export async function getHouseholdMember(
