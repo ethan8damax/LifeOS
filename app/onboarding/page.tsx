@@ -7,7 +7,7 @@ import { createHousehold, joinHousehold, addMemberToHousehold } from '@/lib/quer
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const { user, refreshHousehold } = useAuth()
+  const { user, loading: authLoading, refreshHousehold } = useAuth()
 
   // Create household state
   const [householdName, setHouseholdName] = useState('Our Household')
@@ -59,6 +59,14 @@ export default function OnboardingPage() {
     } finally {
       setJoinLoading(false)
     }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <span className="text-[13px] text-foreground-tertiary">Loading…</span>
+      </div>
+    )
   }
 
   return (
