@@ -136,7 +136,7 @@ export default function GoalsPage() {
   // ── Tactic mutations ──────────────────────────────────────────────────────────
 
   async function handleToggleTactic(taskId: string, done: boolean) {
-    const next = done ? 'todo' : 'done'
+    const next = done ? 'done' : 'todo'
     setTactics(prev => prev.map(t => t.id === taskId ? { ...t, status: next } : t))
     try {
       await updateTask(taskId, { status: next })
