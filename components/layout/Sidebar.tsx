@@ -167,8 +167,8 @@ export default function Sidebar() {
     return href === '/' ? pathname === '/' : pathname.startsWith(href)
   }
 
-  const initial = (displayName?.[0] ?? '?').toUpperCase()
-  const nameLabel = displayName ?? 'Loading…'
+  const initial = (displayName?.[0] ?? 'U').toUpperCase()
+  const nameLabel = displayName ?? 'User'
 
   return (
     <aside className={cn(
