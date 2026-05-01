@@ -20,8 +20,9 @@ async function resolveHouseholdId(supabase: SupabaseClient): Promise<string> {
     .from('household_members')
     .select('household_id')
     .eq('user_id', session.user.id)
-    .single()
+    .maybeSingle()
   if (error) throw error
+  if (!data) throw new Error('No household found — complete onboarding first')
   return data.household_id
 }
 
