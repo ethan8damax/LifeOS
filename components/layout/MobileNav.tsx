@@ -76,8 +76,12 @@ const ACTIVE_TEXT: Record<Intent, string> = {
   finance: 'text-finance',
 }
 
+const AUTH_PATHS = ['/login', '/signup', '/onboarding']
+
 export default function MobileNav() {
   const pathname = usePathname()
+
+  if (AUTH_PATHS.some(p => pathname.startsWith(p))) return null
 
   function active(href: string) {
     return href === '/' ? pathname === '/' : pathname.startsWith(href)

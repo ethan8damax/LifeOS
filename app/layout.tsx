@@ -4,6 +4,7 @@ import './tokens.css'
 import './globals.css'
 import Sidebar        from '@/components/layout/Sidebar'
 import MobileNav      from '@/components/layout/MobileNav'
+import AppShell       from '@/components/layout/AppShell'
 import ThemeProvider  from '@/components/layout/ThemeProvider'
 import { AuthProvider } from '@/lib/context/auth'
 
@@ -28,12 +29,9 @@ export default function RootLayout({
       <body className={`${geistSans.variable} antialiased`}>
         <ThemeProvider>
           <AuthProvider>
-            <div className="flex h-screen">
-              <Sidebar />
-              <main className="flex-1 h-screen overflow-y-auto pb-[68px] md:pb-0">
-                {children}
-              </main>
-            </div>
+            <AppShell sidebar={<Sidebar />}>
+              {children}
+            </AppShell>
             <MobileNav />
           </AuthProvider>
         </ThemeProvider>
