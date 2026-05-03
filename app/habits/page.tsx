@@ -234,8 +234,9 @@ export default function HabitsPage() {
         </div>
       </form>
 
-      {/* Habit list — only today's habits */}
-      <Card>
+      {/* Today's habits */}
+      <Card className="mb-4">
+        <p className="text-[12px] text-foreground-tertiary mb-3">Today</p>
         {loading ? (
           <p className="text-[13px] text-foreground-tertiary py-1">Loading…</p>
         ) : error ? (
@@ -257,6 +258,25 @@ export default function HabitsPage() {
           </div>
         )}
       </Card>
+
+      {/* All habits — so users can manage habits not scheduled today */}
+      {!loading && habits.length > habitsToday.length && (
+        <Card>
+          <p className="text-[12px] text-foreground-tertiary mb-3">All habits</p>
+          <div>
+            {habits.map(habit => (
+              <HabitTracker
+                key={habit.id}
+                habit={habit}
+                dots={buildDots(habit.id, weekDates, logsByHabit, today, habit.days)}
+                today={today}
+                onToggle={handleToggle}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        </Card>
+      )}
 
     </div>
   )
