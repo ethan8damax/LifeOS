@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { createHousehold, addMemberToHousehold } from '@/lib/queries/households'
 
@@ -10,7 +9,6 @@ type AccountType = 'individual' | 'household'
 type Step = 'form' | 'invite' | 'confirm-email'
 
 export default function SignupPage() {
-  const router = useRouter()
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail]             = useState('')
   const [password, setPassword]       = useState('')
@@ -49,8 +47,7 @@ export default function SignupPage() {
       await addMemberToHousehold(householdId, userId, displayName)
 
       if (accountType === 'individual') {
-        router.push('/')
-        router.refresh()
+        window.location.href = '/'
       } else {
         setInviteCode(invite_code)
         setStep('invite')
@@ -113,7 +110,7 @@ export default function SignupPage() {
             </div>
 
             <button
-              onClick={() => { router.push('/'); router.refresh() }}
+              onClick={() => { window.location.href = '/' }}
               className="w-full h-9 rounded-lg bg-goals text-white text-[13px] font-medium"
             >
               Continue to app
