@@ -37,6 +37,10 @@ export async function joinHousehold(
 
   if (findError) throw findError
 
+  // Remove any existing membership first — prevents duplicate rows if the user
+  // already had a household created during signup.
+  await supabase.from('household_members').delete().eq('user_id', userId)
+
   await addMemberToHousehold(household.id, userId, displayName)
 }
 

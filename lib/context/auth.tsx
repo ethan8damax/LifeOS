@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
+import { createHousehold, addMemberToHousehold } from '@/lib/queries/households'
 
 interface AuthContextValue {
   user:             User | null
@@ -44,11 +45,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         currentUser.email?.split('@')[0] ?? null,
       )
     } else {
-      setHouseholdId(null)
-      setDisplayName(
+      // No household row — user confirmed email before household was created.
+      // Auto-create one so the app is immediately usable.
+      const name =
         (currentUser.user_metadata?.display_name as string | undefined) ??
-        currentUser.email?.split('@')[0] ?? null,
-      )
+        currentUser.email?.split('@')[0] ??
+        'User'
+      setDisplayName(name)
+      try {
+        const { id: householdId } = await createHousehold(`${name}'s household`)
+        await addMemberToHousehold(householdId, userId, name)
+        setHouseholdId(householdId)
+      } catch {
+        setHouseholdId(null)
+      }
     }
   }
 
