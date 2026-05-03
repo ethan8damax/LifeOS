@@ -2,12 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { joinHousehold } from '@/lib/queries/households'
 
 export default function JoinPage() {
-  const router = useRouter()
   const [code, setCode]       = useState('')
   const [name, setName]       = useState('')
   const [error, setError]     = useState<string | null>(null)
@@ -21,11 +19,13 @@ export default function JoinPage() {
     try {
       const supabase = createClient()
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) { setError('You must be signed in to join a household.'); return }
+      if (!session?.user) {
+        setError('You need an account first. Sign up below, then come back to enter your invite code.')
+        return
+      }
 
       await joinHousehold(code.trim(), session.user.id, name.trim() || session.user.email?.split('@')[0] || 'User')
-      router.push('/')
-      router.refresh()
+      window.location.href = '/'
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Invalid invite code.'
       setError(msg.includes('No rows') || msg.includes('PGRST116') ? 'Invite code not found.' : msg)

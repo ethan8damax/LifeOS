@@ -35,7 +35,7 @@ export default function GoalProgress({ goal, onDelete }: GoalProgressProps) {
         {isPast ? 'Done' : `Wk ${weekNum}/12`}
       </span>
 
-      <Badge intent={STATUS_INTENT[status] ?? 'neutral'}>{status}</Badge>
+      <Badge intent={STATUS_INTENT[status] ?? 'neutral'}>{status[0].toUpperCase() + status.slice(1)}</Badge>
 
       <button
         type="button"

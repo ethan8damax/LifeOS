@@ -764,7 +764,7 @@ export default function ListsPage() {
           {/* Pinned */}
           {pinnedLists.length > 0 && (
             <div>
-              <p className="text-[11px] text-foreground-tertiary mb-3 uppercase tracking-wide">
+              <p className="text-[11px] text-foreground-tertiary mb-3">
                 Pinned
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -784,7 +784,7 @@ export default function ListsPage() {
           {regularLists.length > 0 && (
             <div>
               {pinnedLists.length > 0 && (
-                <p className="text-[11px] text-foreground-tertiary mb-3 uppercase tracking-wide">
+                <p className="text-[11px] text-foreground-tertiary mb-3">
                   All lists
                 </p>
               )}

@@ -137,7 +137,7 @@ export default function GoalCard({
           className="hover:opacity-70 transition-opacity"
         >
           <Badge intent={STATUS_INTENT[goal.status ?? 'active']}>
-            {goal.status ?? 'active'}
+            {(goal.status ?? 'active')[0].toUpperCase() + (goal.status ?? 'active').slice(1)}
           </Badge>
         </button>
         <button

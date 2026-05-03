@@ -546,6 +546,12 @@ function IncomeTab({
         <Button size="sm" variant="ghost" intent="neutral" onClick={() => setMonth(shiftMonth(month, 1))}>→</Button>
       </div>
 
+      {owners.length === 0 && (
+        <p className="text-[13px] text-foreground-tertiary mb-4">
+          No household members found. Your account may still be setting up — try refreshing.
+        </p>
+      )}
+
       {/* Per-owner sections */}
       <div className="flex flex-col gap-4 mb-4">
         {owners.map(owner => {
