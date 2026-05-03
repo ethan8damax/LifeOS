@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
-  getGoals, createGoal, deleteGoal,
+  getGoals, createGoal, updateGoal, deleteGoal,
   getGoalHabitsWithHabits, linkHabitToGoal, unlinkHabitFromGoal,
 } from '@/lib/queries/goals'
 import { getHabits, getHabitLogsForWeek } from '@/lib/queries/habits'
@@ -131,6 +131,15 @@ export default function GoalsPage() {
   }
 
   // ── Goal mutations ────────────────────────────────────────────────────────────
+
+  async function handleStatusChange(goalId: string, status: 'active' | 'paused' | 'done') {
+    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, status } : g))
+    try {
+      await updateGoal(goalId, { status })
+    } catch {
+      load()
+    }
+  }
 
   async function handleDeleteGoal(goalId: string) {
     setGoals(prev => prev.filter(g => g.id !== goalId))
@@ -337,6 +346,7 @@ export default function GoalsPage() {
                 today={today}
                 weekDates={weekDates}
                 onDelete={handleDeleteGoal}
+                onStatusChange={handleStatusChange}
                 onLinkList={handleLinkList}
                 onUnlinkList={handleUnlinkList}
                 onLinkHabit={handleLinkHabit}

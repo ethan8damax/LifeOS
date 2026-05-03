@@ -67,6 +67,13 @@ const STATUS_INTENT: Record<string, BadgeIntent> = {
   done:   'habits',
 }
 
+type GoalStatus = 'active' | 'paused' | 'done'
+const STATUS_CYCLE: Record<GoalStatus, GoalStatus> = {
+  active: 'paused',
+  paused: 'done',
+  done:   'active',
+}
+
 export interface GoalCardProps {
   goal:             Goal
   linkedLists:      ListWithItems[]
@@ -77,6 +84,7 @@ export interface GoalCardProps {
   today:            string
   weekDates:        string[]
   onDelete:         (goalId: string) => void
+  onStatusChange:   (goalId: string, status: GoalStatus) => Promise<void>
   onLinkList:       (goalId: string, listId: string) => Promise<void>
   onUnlinkList:     (goalId: string, listId: string) => Promise<void>
   onLinkHabit:      (goalId: string, habitId: string) => Promise<void>
@@ -92,7 +100,7 @@ const JS_DAY_TO_KEY: Record<number, string> = {
 export default function GoalCard({
   goal, linkedLists, linkedHabits, habitLogsByHabit,
   allHabits, allLists, today, weekDates,
-  onDelete, onLinkList, onUnlinkList, onLinkHabit, onUnlinkHabit,
+  onDelete, onStatusChange, onLinkList, onUnlinkList, onLinkHabit, onUnlinkHabit,
 }: GoalCardProps) {
   const [showListPicker,  setShowListPicker]  = useState(false)
   const [showHabitPicker, setShowHabitPicker] = useState(false)
@@ -119,7 +127,19 @@ export default function GoalCard({
         <span className="text-[14px] font-medium text-foreground flex-1 leading-snug">
           {goal.title}
         </span>
-        <Badge intent={STATUS_INTENT[goal.status ?? 'active']}>{goal.status ?? 'active'}</Badge>
+        <button
+          type="button"
+          title="Click to change status"
+          onClick={() => {
+            const current = (goal.status ?? 'active') as GoalStatus
+            onStatusChange(goal.id, STATUS_CYCLE[current])
+          }}
+          className="hover:opacity-70 transition-opacity"
+        >
+          <Badge intent={STATUS_INTENT[goal.status ?? 'active']}>
+            {goal.status ?? 'active'}
+          </Badge>
+        </button>
         <button
           type="button"
           onClick={() => onDelete(goal.id)}
